@@ -79,12 +79,15 @@
     return YES;
 }
 
-- (void)drawSelectionForItemAtIndex:(NSUInteger)index
+//- (void)drawSelectionForItemAtIndex:(NSUInteger)index
+
+- (void)drawItemSelectionInRect:(NSRect)aRect
 {
-  NSRect itemRect = NSInsetRect([self rectOfItemAtIndex:index], 10, 10);
-  
-  [[NSColor lightGrayColor] set];
-  [[NSBezierPath bezierPathWithRoundedRect:itemRect xRadius:10 yRadius:10] fill];
+  NSRect insetRect = NSInsetRect(aRect, 10, 10);
+  if ([self needsToDrawRect:insetRect]) {  
+    [[NSColor lightGrayColor] set];
+    [[NSBezierPath bezierPathWithRoundedRect:insetRect xRadius:10 yRadius:10] fill];
+  }
 }
 
 - (void)drawRect:(NSRect)dirtyRect
@@ -96,10 +99,10 @@
   NSFrameRect(BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation));
   
   if ([selectionIndexes count] > 0 && [self shoulDrawSelections]) {
-    [[self indexesOfItemsInRect:dirtyRect] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-      if ([selectionIndexes containsIndex:idx])
-        [self drawSelectionForItemAtIndex:idx];
-    }];
+    for (NSNumber *number in visibleViewControllers) {
+      if ([selectionIndexes containsIndex:[number integerValue]])
+        [self drawItemSelectionInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
+    }
   }
 }
 
@@ -190,6 +193,7 @@
   NSSize cellSize = [self cellSize];
   NSUInteger rowIndex    = anIndex / [self numberOfItemsPerRow];
   NSUInteger columnIndex = anIndex % [self numberOfItemsPerRow];
+  
   return NSMakeRect(columnIndex*cellSize.width, rowIndex*cellSize.height, cellSize.width, cellSize.height);
 }
 
@@ -308,6 +312,11 @@
 
 - (void)selectItemAtIndex:(NSUInteger)index
 {
+  [self selectItemAtIndex:index inBulk:NO];
+}
+
+- (void)selectItemAtIndex:(NSUInteger)index inBulk:(BOOL)bulkSelecting
+{
   if (index >= [contentArray count])
     return;
     
@@ -325,14 +334,17 @@
     if ([self shoulDrawSelections])
       [self setNeedsDisplayInRect:[self rectOfItemAtIndex:index]];
   }
-  self.lastSelectionIndex = index;
+  
+  if (!bulkSelecting)
+    self.lastSelectionIndex = index;
 }
 
 - (void)selectItemsAtIndexes:(NSIndexSet *)indexes
 {
   [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    [self selectItemAtIndex:idx];
+    [self selectItemAtIndex:idx inBulk:YES];
   }];
+  self.lastSelectionIndex = [indexes firstIndex];
 }
 
 - (void)deselectItemAtIndex:(NSUInteger)index
@@ -357,6 +369,11 @@
   [selectionIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     [self deselectItemAtIndex:idx];
   }];
+}
+
+- (void)selectAll:(id)sender
+{
+  [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0,[contentArray count])]];
 }
 
 #pragma mark User-interaction

@@ -18,8 +18,8 @@
   NSMutableArray      *reusableViewControllers;
   NSMutableDictionary *visibleViewControllers;
   
-  NSMutableIndexSet *selectionIndexes;
-  NSIndexSet *originalSelectionIndexes;
+  NSMutableIndexSet   *selectionIndexes;
+  NSIndexSet          *originalSelectionIndexes;
   
   NSPoint mouseDownLocation;
   NSPoint mouseDraggedLocation;
@@ -42,6 +42,8 @@
 
 //Managing Selections
 - (void)selectItemAtIndex:(NSUInteger)index;
+- (void)selectItemAtIndex:(NSUInteger)index inBulk:(BOOL)bulk;
+
 - (void)selectItemsAtIndexes:(NSIndexSet *)indexes;
 - (void)deselectItemAtIndex:(NSUInteger)index;
 - (void)deselectItemsAtIndexes:(NSIndexSet *)indexes;
@@ -55,6 +57,7 @@
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect;
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
+- (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
 
 //Querying ViewControllers
 - (NSIndexSet *)indexesOfViewControllers;
