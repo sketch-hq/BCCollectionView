@@ -33,3 +33,7 @@ Note. Do not use the following methods to style viewControllers. They are intend
 	- (BOOL)iconView:(BCCollectionView *)iconView shouldSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 	- (void)iconView:(BCCollectionView *)iconView didSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 	- (void)iconView:(BCCollectionView *)iconView didDeselectItem:(id)anItem withViewController:(NSViewController *)viewController;
+
+# License
+
+BCCollectionView is licensed under the BSD license
