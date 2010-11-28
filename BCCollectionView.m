@@ -10,7 +10,7 @@
 #import "BCGeometryExtensions.h"
 
 @implementation BCCollectionView
-@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, lastSelectionIndex;
+@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes;
 
 #pragma mark Setup and Teardown
 
@@ -25,7 +25,6 @@
     
     [self addObserver:self forKeyPath:@"contentArray" options:0 context:NULL];
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
-    [self addObserver:self forKeyPath:@"lastSelectionIndex" options:0 context:NULL];
     
     NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
     [enclosingClipView setPostsBoundsChangedNotifications:YES];
@@ -45,8 +44,6 @@
     [self reloadData];
   else if ([keyPath isEqualToString:@"backgroundColor"])
     [self setNeedsDisplay:YES];
-  else if ([keyPath isEqualToString:@"lastSelectionIndex"])
-    [self scrollRectToVisible:[self rectOfItemAtIndex:lastSelectionIndex]];
   else
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
@@ -55,7 +52,6 @@
 {
   [self removeObserver:self forKeyPath:@"contentArray"];
   [self removeObserver:self forKeyPath:@"backgroundColor"];
-  [self removeObserver:self forKeyPath:@"lastSelectionIndex"];
   
   NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
   [center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
@@ -336,7 +332,7 @@
   }
   
   if (!bulkSelecting)
-    self.lastSelectionIndex = index;
+    lastSelectionIndex = index;
 }
 
 - (void)selectItemsAtIndexes:(NSIndexSet *)indexes
@@ -344,7 +340,7 @@
   [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     [self selectItemAtIndex:idx inBulk:YES];
   }];
-  self.lastSelectionIndex = [indexes firstIndex];
+  lastSelectionIndex = [indexes firstIndex];
 }
 
 - (void)deselectItemAtIndex:(NSUInteger)index

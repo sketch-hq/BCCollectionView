@@ -36,7 +36,6 @@
 
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
-@property (nonatomic) NSUInteger lastSelectionIndex;
 
 - (void)reloadData;
 

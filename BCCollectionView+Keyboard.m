@@ -20,7 +20,9 @@
   NSUInteger index = lastSelectionIndex;
   if (index % [self numberOfItemsPerRow] != 0) {
     [self deselectAllItems];
-    [self selectItemAtIndex:index-1];
+    NSUInteger newIndex = index-1;
+    [self selectItemAtIndex:newIndex];
+    [self scrollRectToVisible:[self rectOfItemAtIndex:newIndex]];
   }
 }
 
@@ -32,7 +34,8 @@
       [self deselectItemAtIndex:lastSelectionIndex];
     else
       [self selectItemAtIndex:index];
-    self.lastSelectionIndex = index;
+    lastSelectionIndex = index;
+    [self scrollRectToVisible:[self rectOfItemAtIndex:index]];
   }
 }
 
@@ -41,7 +44,9 @@
   NSUInteger index = lastSelectionIndex;
   if (index % [self numberOfItemsPerRow] != [self numberOfItemsPerRow]-1) {
     [self deselectAllItems];
-    [self selectItemAtIndex:index+1];
+    NSUInteger newIndex = index+1;
+    [self selectItemAtIndex:newIndex];
+    [self scrollRectToVisible:[self rectOfItemAtIndex:newIndex]];
   }
 }
 
@@ -53,7 +58,8 @@
       [self deselectItemAtIndex:lastSelectionIndex];
     else
       [self selectItemAtIndex:index];
-    self.lastSelectionIndex = index;
+    lastSelectionIndex = index;
+    [self scrollRectToVisible:[self rectOfItemAtIndex:index]];
   }
 }
 
@@ -62,7 +68,9 @@
   NSUInteger index = lastSelectionIndex;
   if (index > [self numberOfItemsPerRow]-1) {
     [self deselectAllItems];
-    [self selectItemAtIndex:index-[self numberOfItemsPerRow]];
+    NSUInteger newIndex = index-[self numberOfItemsPerRow];
+    [self selectItemAtIndex:newIndex];
+    [self scrollRectToVisible:[self rectOfItemAtIndex:newIndex]];
   }
 }
 
@@ -76,7 +84,8 @@
       [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
     } else
       [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
-    self.lastSelectionIndex = index;
+    lastSelectionIndex = index;
+    [self scrollRectToVisible:[self rectOfItemAtIndex:index]];
   }
 }
 
@@ -85,7 +94,9 @@
   NSUInteger index = lastSelectionIndex;
   if (index + [self numberOfItemsPerRow] < [contentArray count]) {
     [self deselectAllItems];
-    [self selectItemAtIndex:index + [self numberOfItemsPerRow]];
+    NSUInteger newIndex = index + [self numberOfItemsPerRow];
+    [self selectItemAtIndex:newIndex];
+    [self scrollRectToVisible:[self rectOfItemAtIndex:newIndex]];
   }
 }
 
@@ -101,7 +112,8 @@
       range.length++;
       [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
     }
-    self.lastSelectionIndex = index;
+    lastSelectionIndex = index;
+    [self scrollRectToVisible:[self rectOfItemAtIndex:index]];
   }
 }
 
