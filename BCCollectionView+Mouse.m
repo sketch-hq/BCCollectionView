@@ -28,6 +28,10 @@
   mouseDownLocation    = [self convertPoint:[theEvent locationInWindow] fromView:nil];
   mouseDraggedLocation = mouseDownLocation;
   
+  if ([theEvent clickCount] == 2 && [delegate respondsToSelector:@selector(collectionView:didDoubleClickViewControllerAtIndex:)])
+    [delegate collectionView:self didDoubleClickViewControllerAtIndex:[visibleViewControllers objectForKey:[NSNumber numberWithInt:[self indexOfItemAtPoint:mouseDownLocation]]]];
+  
+  
   NSUInteger index = [self indexOfItemAtPoint:mouseDownLocation];
   if ([self shiftOrCommandKeyPressed] && [self.originalSelectionIndexes containsIndex:index])
     [self deselectItemAtIndex:index];

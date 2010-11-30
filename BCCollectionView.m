@@ -69,8 +69,8 @@
 
 - (BOOL)shoulDrawSelections
 {
-  if ([delegate respondsToSelector:@selector(iconViewShouldDrawSelections:)])
-    return [delegate iconViewShouldDrawSelections:self];
+  if ([delegate respondsToSelector:@selector(collectionViewShouldDrawSelections:)])
+    return [delegate collectionViewShouldDrawSelections:self];
   else
     return YES;
 }
@@ -116,38 +116,38 @@
 
 - (void)delegateUpdateSelectionForItemAtIndex:(NSUInteger)index
 {
-  if ([delegate respondsToSelector:@selector(iconView:updateViewControllerAsSelected:forItem:)])
-    [delegate iconView:self updateViewControllerAsSelected:[self viewControllerForItemAtIndex:index]
+  if ([delegate respondsToSelector:@selector(collectionView:updateViewControllerAsSelected:forItem:)])
+    [delegate collectionView:self updateViewControllerAsSelected:[self viewControllerForItemAtIndex:index]
                forItem:[contentArray objectAtIndex:index]];
 }
 
 - (void)delegateUpdateDeselectionForItemAtIndex:(NSUInteger)index
 {
-  if ([delegate respondsToSelector:@selector(iconView:updateViewControllerAsDeselected:forItem:)])
-    [delegate iconView:self updateViewControllerAsDeselected:[self viewControllerForItemAtIndex:index]
+  if ([delegate respondsToSelector:@selector(collectionView:updateViewControllerAsDeselected:forItem:)])
+    [delegate collectionView:self updateViewControllerAsDeselected:[self viewControllerForItemAtIndex:index]
                forItem:[contentArray objectAtIndex:index]];
 }
 
 - (void)delegateDidSelectItemAtIndex:(NSUInteger)index
 {
-  if ([delegate respondsToSelector:@selector(iconView:didSelectItem:withViewController:)])
-    [delegate iconView:self
+  if ([delegate respondsToSelector:@selector(collectionView:didSelectItem:withViewController:)])
+    [delegate collectionView:self
          didSelectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
 }
 
 - (void)delegateDidDeselectItemAtIndex:(NSUInteger)index
 {
-  if ([delegate respondsToSelector:@selector(iconView:didDeselectItem:withViewController:)])
-    [delegate iconView:self
+  if ([delegate respondsToSelector:@selector(collectionView:didDeselectItem:withViewController:)])
+    [delegate collectionView:self
        didDeselectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
 }
 
 - (void)delegateViewControllerBecameInvisibleAtIndex:(NSUInteger)index
 {
-  if ([delegate respondsToSelector:@selector(iconView:viewControllerBecameInvisible:)])
-    [delegate iconView:self viewControllerBecameInvisible:[self viewControllerForItemAtIndex:index]];
+  if ([delegate respondsToSelector:@selector(collectionView:viewControllerBecameInvisible:)])
+    [delegate collectionView:self viewControllerBecameInvisible:[self viewControllerForItemAtIndex:index]];
 }
 
 #pragma mark Basic Information
@@ -164,7 +164,7 @@
 
 - (NSSize)cellSize
 {
-  return [delegate cellSizeForIconView:self];
+  return [delegate cellSizeForCollectionView:self];
 }
 
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p
@@ -264,7 +264,7 @@
     [reusableViewControllers removeLastObject];
     return viewController;
   } else
-    return [delegate reusableViewControllerForIconView:self];
+    return [delegate reusableViewControllerForCollectionView:self];
 }
 
 - (void)addMissingViewControllers
@@ -277,8 +277,10 @@
       [visibleViewControllers setObject:viewController forKey:key];
       [[viewController view] setFrame:[self rectOfItemAtIndex:idx]];
       [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+      
+      id itemToLoad = [contentArray objectAtIndex:idx];
       dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [delegate iconView:self willShowViewController:viewController forItem:[contentArray objectAtIndex:idx]];
+        [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
         dispatch_async(dispatch_get_main_queue(), ^{
           [self addSubview:[viewController view]];
           if ([selectionIndexes containsIndex:idx])
@@ -320,8 +322,8 @@
   NSViewController *viewController = [self viewControllerForItemAtIndex:index];
   id item = [contentArray objectAtIndex:index];
   
-  if ([delegate respondsToSelector:@selector(iconView:shouldSelectItem:withViewController:)])
-    maySelectItem = [delegate iconView:self shouldSelectItem:item withViewController:viewController];
+  if ([delegate respondsToSelector:@selector(collectionView:shouldSelectItem:withViewController:)])
+    maySelectItem = [delegate collectionView:self shouldSelectItem:item withViewController:viewController];
   
   if (maySelectItem) {
     [selectionIndexes addIndex:index];
@@ -408,6 +410,9 @@
     [self removeInvisibleViewControllers];
     [self addMissingViewControllers];
   });
+  
+  if ([delegate respondsToSelector:@selector(collectionViewDidScroll:)])
+    [delegate collectionViewDidScroll:self];
 }
 
 - (void)viewDidResize

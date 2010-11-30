@@ -57,6 +57,7 @@
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 - (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
+- (NSIndexSet *)indexesOfInvisibleViewControllers;
 
 //Querying ViewControllers
 - (NSIndexSet *)indexesOfViewControllers;
