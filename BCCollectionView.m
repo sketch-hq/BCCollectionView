@@ -23,7 +23,6 @@
     contentArray            = [[NSArray alloc] init];
     selectionIndexes        = [[NSMutableIndexSet alloc] init];
     
-    [self addObserver:self forKeyPath:@"contentArray" options:0 context:NULL];
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
     NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
@@ -40,9 +39,7 @@
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change
                        context:(void *)context
 {
-  if ([keyPath isEqualToString:@"contentArray"])
-    [self reloadData];
-  else if ([keyPath isEqualToString:@"backgroundColor"])
+  if ([keyPath isEqualToString:@"backgroundColor"])
     [self setNeedsDisplay:YES];
   else
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
@@ -50,7 +47,6 @@
 
 - (void)dealloc
 {
-  [self removeObserver:self forKeyPath:@"contentArray"];
   [self removeObserver:self forKeyPath:@"backgroundColor"];
   
   NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
@@ -291,15 +287,6 @@
   }];
 }
 
-- (void)removeAllViewControllers
-{
-  for (NSViewController *viewController in [visibleViewControllers allValues])
-    [[viewController view] removeFromSuperview];
-  
-  [reusableViewControllers removeAllObjects];
-  [visibleViewControllers removeAllObjects];
-}
-
 - (void)moveViewControllersToProperPosition
 {
   for (NSNumber *number in visibleViewControllers)
@@ -388,31 +375,73 @@
 
 #pragma mark Reloading and Updating the Icon View
 
-- (void)reloadData
+- (void)softReloadVisibleViewControllers
+{
+  NSMutableArray *removeKeys = [NSMutableArray array];
+  
+  for (NSString *number in visibleViewControllers) {
+    NSUInteger index             = [number integerValue];
+    NSViewController *controller = [visibleViewControllers objectForKey:number];
+    
+    if (index < [contentArray count]) {
+      if ([selectionIndexes containsIndex:index])
+        [self delegateUpdateDeselectionForItemAtIndex:index];
+      [delegate collectionView:self willShowViewController:controller forItem:[contentArray objectAtIndex:index]];
+    } else {
+      if ([selectionIndexes containsIndex:index])
+        [self delegateUpdateDeselectionForItemAtIndex:index];
+      
+      [self delegateViewControllerBecameInvisibleAtIndex:index];
+      [[controller view] removeFromSuperview];
+      [reusableViewControllers addObject:controller];
+      [removeKeys addObject:number];
+    }
+  }
+  [visibleViewControllers removeObjectsForKeys:removeKeys];
+}
+
+- (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches
 {
   if (!delegate)
     return;
+  
+  self.contentArray = newContent;
   
   NSRect frame = [self frame];
   frame.size.height = [self visibleRect].size.height;
   frame.size.height = MAX(frame.size.height, [self numberOfRows] * [self cellSize].height);
   [self setFrame:frame];
   
-  [self removeAllViewControllers];
+  if (shouldEmptyCaches) {
+    for (NSViewController *viewController in [visibleViewControllers allValues])
+      [[viewController view] removeFromSuperview];
+    
+    [reusableViewControllers removeAllObjects];
+    [visibleViewControllers removeAllObjects];
+  } else
+    [self softReloadVisibleViewControllers];
+  
+  [selectionIndexes removeAllIndexes];
+  
   dispatch_async(dispatch_get_main_queue(), ^{
     [self addMissingViewControllers];
   });
 }
 
-- (void)scrollViewDidScroll:(NSScrollView *)scrollView
+- (void)scrollViewDidScroll:(NSNotification *)note
 {
   dispatch_async(dispatch_get_main_queue(), ^{
     [self removeInvisibleViewControllers];
     [self addMissingViewControllers];
   });
   
-  if ([delegate respondsToSelector:@selector(collectionViewDidScroll:)])
-    [delegate collectionViewDidScroll:self];
+  if ([delegate respondsToSelector:@selector(collectionViewDidScroll:inDirection:)]) {
+    if ([self visibleRect].origin.y > previousFrameBounds.origin.y)
+      [delegate collectionViewDidScroll:self inDirection:BCCollectionViewScrollDirectionDown];
+    else
+      [delegate collectionViewDidScroll:self inDirection:BCCollectionViewScrollDirectionUp];
+    previousFrameBounds = [self visibleRect];
+  }
 }
 
 - (void)viewDidResize

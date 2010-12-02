@@ -10,6 +10,11 @@
 
 @class BCCollectionView;
 
+enum {
+  BCCollectionViewScrollDirectionUp   = 0,
+  BCCollectionViewScrollDirectionDown = 1
+};
+
 @protocol BCCollectionViewDelegate <NSObject>
 @required
 //CollectionView assumes all cells aer the same size and will resize its subviews to this size.
@@ -33,7 +38,7 @@
 - (void)collectionView:(BCCollectionView *)collectionView didSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 - (void)collectionView:(BCCollectionView *)collectionView didDeselectItem:(id)anItem withViewController:(NSViewController *)viewController;
 
-- (void)collectionViewDidScroll:(BCCollectionView *)collectionView;
+- (void)collectionViewDidScroll:(BCCollectionView *)collectionView inDirection:(NSUInteger)scrollDirection;
 - (void)collectionView:(BCCollectionView *)collectionView didDoubleClickViewControllerAtIndex:(NSViewController *)viewController;
 
 //defaults to YES

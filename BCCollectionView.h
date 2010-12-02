@@ -21,23 +21,23 @@
   NSMutableIndexSet   *selectionIndexes;
   NSIndexSet          *originalSelectionIndexes;
   
-  NSPoint mouseDownLocation;
-  NSPoint mouseDraggedLocation;
-  
   NSColor *backgroundColor;
   
   NSUInteger lastSelectionIndex;
+  
+@private
+  NSPoint mouseDownLocation;
+  NSPoint mouseDraggedLocation;
+  NSRect previousFrameBounds;
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
 
-//by setting the contentArray, the view will load itself up.
-@property (nonatomic, copy) NSArray *contentArray;
-
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
+@property (nonatomic, copy) NSArray *contentArray;
 
-- (void)reloadData;
+- (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
 
 //Managing Selections
 - (void)selectItemAtIndex:(NSUInteger)index;
@@ -57,7 +57,9 @@
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 - (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
+
 - (NSIndexSet *)indexesOfInvisibleViewControllers;
+- (NSRange)rangeOfVisibleItems;
 
 //Querying ViewControllers
 - (NSIndexSet *)indexesOfViewControllers;
