@@ -40,7 +40,21 @@ enum {
 
 - (void)collectionViewDidScroll:(BCCollectionView *)collectionView inDirection:(NSUInteger)scrollDirection;
 - (void)collectionView:(BCCollectionView *)collectionView didDoubleClickViewControllerAtIndex:(NSViewController *)viewController;
+- (NSSize)insetMarginForSelectingItemsInCollectionView:(BCCollectionView *)collectionView;
 
 //defaults to YES
 - (BOOL)collectionViewShouldDrawSelections:(BCCollectionView *)collectionView;
+- (BOOL)collectionViewShouldDrawHover:(BCCollectionView *)collectionView;
+
+//managing Drag & Drop (in order of occurence)
+- (BOOL)collectionView:(BCCollectionView *)collectionView canDragItemsAtIndexes:(NSIndexSet *)indexSet;
+- (void)collectionView:(BCCollectionView *)collectionView writeItemsAtIndexes:(NSIndexSet *)indexSet toPasteboard:(NSPasteboard *)pboard;
+- (BOOL)collectionView:(BCCollectionView *)collectionView validateDrop:(id <NSDraggingInfo>)draggingInfo onItemAtIndex:(NSInteger)index;
+- (void)collectionView:(BCCollectionView *)collectionView dragEnteredViewController:(NSViewController *)viewController;
+- (void)collectionView:(BCCollectionView *)collectionView dragExitedViewController:(NSViewController *)viewController;
+- (BOOL)collectionView:(BCCollectionView *)collectionView
+  performDragOperation:(id <NSDraggingInfo>)draggingInfo
+      onViewController:(NSViewController *)viewController
+               forItem:(id)item;
+- (void)collectionView:(BCCollectionView *)collectionView draggingEnded:(id <NSDraggingInfo>)draggingInfo;
 @end

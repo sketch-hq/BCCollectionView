@@ -22,22 +22,20 @@
     visibleViewControllers  = [[NSMutableDictionary alloc] init];
     contentArray            = [[NSArray alloc] init];
     selectionIndexes        = [[NSMutableIndexSet alloc] init];
+    dragHoverIndex          = NSNotFound;
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
     NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
     [enclosingClipView setPostsBoundsChangedNotifications:YES];
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
-    [center addObserver:self selector:@selector(scrollViewDidScroll:)
-                   name:NSViewBoundsDidChangeNotification object:enclosingClipView];
-    
-    [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification  object:nil];
+    [center addObserver:self selector:@selector(scrollViewDidScroll:) name:NSViewBoundsDidChangeNotification object:enclosingClipView];
+    [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:nil];
   }
   return self;
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change
-                       context:(void *)context
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
   if ([keyPath isEqualToString:@"backgroundColor"])
     [self setNeedsDisplay:YES];
@@ -61,6 +59,11 @@
   [super dealloc];
 }
 
+- (BOOL)isFlipped
+{
+  return YES;
+}
+
 #pragma mark Drawing Selections
 
 - (BOOL)shoulDrawSelections
@@ -71,12 +74,18 @@
     return YES;
 }
 
-//- (void)drawSelectionForItemAtIndex:(NSUInteger)index
+- (BOOL)shoulDrawHover
+{
+  if ([delegate respondsToSelector:@selector(collectionViewShouldDrawHover:)])
+    return [delegate collectionViewShouldDrawHover:self];
+  else
+    return YES;
+}
 
-- (void)drawItemSelectionInRect:(NSRect)aRect
+- (void)drawItemSelectionForInRect:(NSRect)aRect
 {
   NSRect insetRect = NSInsetRect(aRect, 10, 10);
-  if ([self needsToDrawRect:insetRect]) {  
+  if ([self needsToDrawRect:insetRect]) {
     [[NSColor lightGrayColor] set];
     [[NSBezierPath bezierPathWithRoundedRect:insetRect xRadius:10 yRadius:10] fill];
   }
@@ -91,24 +100,16 @@
   NSFrameRect(BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation));
   
   if ([selectionIndexes count] > 0 && [self shoulDrawSelections]) {
-    for (NSNumber *number in visibleViewControllers) {
+    for (NSNumber *number in visibleViewControllers)
       if ([selectionIndexes containsIndex:[number integerValue]])
-        [self drawItemSelectionInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
-    }
+        [self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
   }
-}
-
-- (BOOL)isFlipped
-{
-  return YES;
+  
+  if (dragHoverIndex != NSNotFound && [self shoulDrawHover])
+    [self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:[NSNumber numberWithInteger:dragHoverIndex]] view] frame]];
 }
 
 #pragma mark Delegate Call Wrappers
-
-- (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index
-{
-  return [visibleViewControllers objectForKey:[NSNumber numberWithInteger:index]];
-}
 
 - (void)delegateUpdateSelectionForItemAtIndex:(NSUInteger)index
 {
@@ -150,12 +151,12 @@
 
 - (NSUInteger)numberOfRows
 {
-  return ceil([contentArray count]/[self numberOfItemsPerRow]);
+  return ceil((float)[contentArray count]/(float)[self numberOfItemsPerRow]);
 }
 
 - (NSUInteger)numberOfItemsPerRow
 {
-  return [self frame].size.width/[self cellSize].width;
+  return MAX(1, [self frame].size.width/[self cellSize].width);
 }
 
 - (NSSize)cellSize
@@ -180,6 +181,18 @@
   return [self indexOfItemAtPointOrClosestGuess:p];
 }
 
+- (NSUInteger)indexOfItemContentRectAtPoint:(NSPoint)p
+{
+  NSUInteger index = [self indexOfItemAtPoint:p];
+  if (index != NSNotFound) {
+    if (NSPointInRect(p, [self contentRectOfItemAtIndex:index]))
+      return index;
+    else
+      return NSNotFound;
+  }
+  return index;
+}
+
 - (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex
 {
   NSSize cellSize = [self cellSize];
@@ -187,6 +200,16 @@
   NSUInteger columnIndex = anIndex % [self numberOfItemsPerRow];
   
   return NSMakeRect(columnIndex*cellSize.width, rowIndex*cellSize.height, cellSize.width, cellSize.height);
+}
+
+- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex
+{
+  NSRect rect = [self rectOfItemAtIndex:anIndex];
+  if ([delegate respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)]) {
+    NSSize inset = [delegate insetMarginForSelectingItemsInCollectionView:self];
+    return NSInsetRect(rect, inset.width, inset.height);
+  } else
+    return rect;
 }
 
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect
@@ -208,6 +231,25 @@
   return indexes;
 }
 
+- (NSIndexSet *)indexesOfItemContentRectsInRect:(NSRect)aRect
+{
+  NSUInteger firstIndex = [self indexOfItemContentRectAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
+  NSUInteger lastIndex  = [self indexOfItemContentRectAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
+  
+  if (firstIndex == NSNotFound)
+    firstIndex = 0;
+  
+  if (lastIndex == NSNotFound)
+    lastIndex = [contentArray count]-1;
+  
+  NSMutableIndexSet *indexes = [NSMutableIndexSet indexSet];
+  for (NSUInteger i=firstIndex; i<lastIndex+1; i++) {
+    if (NSIntersectsRect(aRect, [self contentRectOfItemAtIndex:i]))
+      [indexes addIndex:i];
+  }
+  return indexes;
+}
+
 - (NSRange)rangeOfVisibleItems
 {
   NSRect visibleRect = [self visibleRect];
@@ -215,7 +257,6 @@
   NSUInteger lastIndex  = [self indexOfItemAtPointOrClosestGuess:NSMakePoint(NSMaxX(visibleRect), NSMaxY(visibleRect))];
   return NSIntersectionRange(NSMakeRange(firstIndex, lastIndex-firstIndex),
                              NSMakeRange(0, [contentArray count]));
-
 }
 
 #pragma mark Querying ViewControllers
@@ -236,6 +277,13 @@
   }];
 }
 
+- (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index
+{
+  return [visibleViewControllers objectForKey:[NSNumber numberWithInteger:index]];
+}
+
+#pragma mark Swapping ViewControllers in and out
+
 - (void)removeInvisibleViewControllers
 {
   [[self indexesOfInvisibleViewControllers] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
@@ -253,7 +301,7 @@
   }];
 }
 
-- (NSViewController *)usableViewController
+- (NSViewController *)emptyViewControllerForInsertion
 {
   if ([reusableViewControllers count] > 0) {
     NSViewController *viewController = [[[reusableViewControllers lastObject] retain] autorelease];
@@ -263,13 +311,12 @@
     return [delegate reusableViewControllerForCollectionView:self];
 }
 
-- (void)addMissingViewControllers
+- (void)addMissingViewControllersToView
 {
-  [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItems]]
-   enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+  [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItems]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     NSNumber *key = [NSNumber numberWithInteger:idx];
     if (![visibleViewControllers objectForKey:key]) {
-      NSViewController *viewController = [self usableViewController];
+      NSViewController *viewController = [self emptyViewControllerForInsertion];
       [visibleViewControllers setObject:viewController forKey:key];
       [[viewController view] setFrame:[self rectOfItemAtIndex:idx]];
       [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
@@ -356,6 +403,11 @@
   }];
 }
 
+- (NSIndexSet *)selectionIndexes
+{
+  return selectionIndexes;
+}
+
 - (void)selectAll:(id)sender
 {
   [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0,[contentArray count])]];
@@ -400,17 +452,21 @@
   [visibleViewControllers removeObjectsForKeys:removeKeys];
 }
 
+- (void)resizeFrameToFitContents
+{
+  NSRect frame = [self frame];
+  frame.size.height = [self visibleRect].size.height;
+  frame.size.height = MAX(frame.size.height, [self numberOfRows] * [self cellSize].height);
+  [self setFrame:frame];
+}
+
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches
 {
   if (!delegate)
     return;
   
   self.contentArray = newContent;
-  
-  NSRect frame = [self frame];
-  frame.size.height = [self visibleRect].size.height;
-  frame.size.height = MAX(frame.size.height, [self numberOfRows] * [self cellSize].height);
-  [self setFrame:frame];
+  [self resizeFrameToFitContents];
   
   if (shouldEmptyCaches) {
     for (NSViewController *viewController in [visibleViewControllers allValues])
@@ -424,7 +480,7 @@
   [selectionIndexes removeAllIndexes];
   
   dispatch_async(dispatch_get_main_queue(), ^{
-    [self addMissingViewControllers];
+    [self addMissingViewControllersToView];
   });
 }
 
@@ -432,7 +488,7 @@
 {
   dispatch_async(dispatch_get_main_queue(), ^{
     [self removeInvisibleViewControllers];
-    [self addMissingViewControllers];
+    [self addMissingViewControllersToView];
   });
   
   if ([delegate respondsToSelector:@selector(collectionViewDidScroll:inDirection:)]) {
@@ -446,9 +502,10 @@
 
 - (void)viewDidResize
 {
+  [self resizeFrameToFitContents];
   dispatch_async(dispatch_get_main_queue(), ^{
     [self moveViewControllersToProperPosition];
-    [self addMissingViewControllers];
+    [self addMissingViewControllersToView];
   });
 }
 

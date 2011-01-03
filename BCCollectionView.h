@@ -17,18 +17,20 @@
   
   NSMutableArray      *reusableViewControllers;
   NSMutableDictionary *visibleViewControllers;
-  
   NSMutableIndexSet   *selectionIndexes;
-  NSIndexSet          *originalSelectionIndexes;
   
   NSColor *backgroundColor;
-  
-  NSUInteger lastSelectionIndex;
   
 @private
   NSPoint mouseDownLocation;
   NSPoint mouseDraggedLocation;
   NSRect previousFrameBounds;
+  
+  NSUInteger lastSelectionIndex;
+  NSIndexSet *originalSelectionIndexes;
+  NSInteger dragHoverIndex;
+  
+  BOOL firstDrag;
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
@@ -37,6 +39,7 @@
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
 @property (nonatomic, copy) NSArray *contentArray;
 
+//designated way to load BCCollectionView
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
 
 //Managing Selections
@@ -47,21 +50,26 @@
 - (void)deselectItemAtIndex:(NSUInteger)index;
 - (void)deselectItemsAtIndexes:(NSIndexSet *)indexes;
 - (void)deselectAllItems;
+- (NSIndexSet *)selectionIndexes;
 
 //Basic Cell Information
 - (NSUInteger)numberOfRows;
 - (NSUInteger)numberOfItemsPerRow;
 - (NSSize)cellSize;
-- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
-- (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect;
-- (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
-- (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
-
-- (NSIndexSet *)indexesOfInvisibleViewControllers;
 - (NSRange)rangeOfVisibleItems;
+
+- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
+- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex;
+
+- (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
+- (NSUInteger)indexOfItemContentRectAtPoint:(NSPoint)p;
+
+- (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect;
+- (NSIndexSet *)indexesOfItemContentRectsInRect:(NSRect)aRect;
 
 //Querying ViewControllers
 - (NSIndexSet *)indexesOfViewControllers;
 - (NSIndexSet *)indexesOfInvisibleViewControllers;
+- (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
 @end
