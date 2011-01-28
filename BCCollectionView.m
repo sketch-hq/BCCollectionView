@@ -30,7 +30,7 @@
     [enclosingClipView setPostsBoundsChangedNotifications:YES];
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserver:self selector:@selector(scrollViewDidScroll:) name:NSViewBoundsDidChangeNotification object:enclosingClipView];
-    [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:nil];
+    [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:self];
   }
   return self;
 }
@@ -49,7 +49,7 @@
   
   NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
   [center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
-  [center removeObserver:self name:NSViewFrameDidChangeNotification object:nil];
+  [center removeObserver:self name:NSViewFrameDidChangeNotification object:self];
   
   [reusableViewControllers release];
   [visibleViewControllers release];
@@ -131,6 +131,9 @@
     [delegate collectionView:self
          didSelectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
+  
+  if ([delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)])
+    [delegate collectionViewSelectionDidChange:self];
 }
 
 - (void)delegateDidDeselectItemAtIndex:(NSUInteger)index
@@ -139,6 +142,9 @@
     [delegate collectionView:self
        didDeselectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
+  
+  if ([delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)])
+    [delegate collectionViewSelectionDidChange:self];
 }
 
 - (void)delegateViewControllerBecameInvisibleAtIndex:(NSUInteger)index
@@ -151,7 +157,7 @@
 
 - (NSUInteger)numberOfRows
 {
-  return ceil((float)[contentArray count]/(float)[self numberOfItemsPerRow]);
+  return MAX(1, ceil((float)[contentArray count]/(float)[self numberOfItemsPerRow]));
 }
 
 - (NSUInteger)numberOfItemsPerRow
@@ -313,25 +319,23 @@
 
 - (void)addMissingViewControllersToView
 {
-  [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItems]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    NSNumber *key = [NSNumber numberWithInteger:idx];
-    if (![visibleViewControllers objectForKey:key]) {
-      NSViewController *viewController = [self emptyViewControllerForInsertion];
-      [visibleViewControllers setObject:viewController forKey:key];
-      [[viewController view] setFrame:[self rectOfItemAtIndex:idx]];
-      [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
-      
-      id itemToLoad = [contentArray objectAtIndex:idx];
-      dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItems]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+      NSNumber *key = [NSNumber numberWithInteger:idx];
+      if (![visibleViewControllers objectForKey:key]) {
+        NSViewController *viewController = [self emptyViewControllerForInsertion];
+        [visibleViewControllers setObject:viewController forKey:key];
+        [[viewController view] setFrame:[self rectOfItemAtIndex:idx]];
+        [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+        
+        id itemToLoad = [contentArray objectAtIndex:idx];
         [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
-        dispatch_async(dispatch_get_main_queue(), ^{
-          [self addSubview:[viewController view]];
-          if ([selectionIndexes containsIndex:idx])
-            [self delegateUpdateSelectionForItemAtIndex:idx];
-        });
-      });
-    }
-  }];
+        [self addSubview:[viewController view]];
+        if ([selectionIndexes containsIndex:idx])
+          [self delegateUpdateSelectionForItemAtIndex:idx];
+      }
+    }];
+  });
 }
 
 - (void)moveViewControllersToProperPosition
@@ -462,6 +466,8 @@
 
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches
 {
+  [self deselectAllItems];
+  
   if (!delegate)
     return;
   
@@ -469,8 +475,11 @@
   [self resizeFrameToFitContents];
   
   if (shouldEmptyCaches) {
-    for (NSViewController *viewController in [visibleViewControllers allValues])
+    for (NSViewController *viewController in [visibleViewControllers allValues]) {
       [[viewController view] removeFromSuperview];
+      if ([delegate respondsToSelector:@selector(collectionView:viewControllerBecameInvisible:)])
+        [delegate collectionView:self viewControllerBecameInvisible:viewController];
+    }
     
     [reusableViewControllers removeAllObjects];
     [visibleViewControllers removeAllObjects];
@@ -507,6 +516,14 @@
     [self moveViewControllersToProperPosition];
     [self addMissingViewControllersToView];
   });
+}
+
+- (NSMenu *)menuForEvent:(NSEvent *)anEvent
+{
+  if ([delegate respondsToSelector:@selector(collectionView:menuForItemsAtIndexes:)])
+    return [delegate collectionView:self menuForItemsAtIndexes:[self selectionIndexes]];
+  else
+    return nil;
 }
 
 @end

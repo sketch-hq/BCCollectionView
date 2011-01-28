@@ -117,4 +117,15 @@
   }
 }
 
+- (void)deleteBackward:(id)sender
+{
+  if ([delegate respondsToSelector:@selector(collectionView:deleteItemsAtIndexes:)])
+    [delegate collectionView:self deleteItemsAtIndexes:selectionIndexes];
+}
+
+- (void)deleteForward:(id)sender
+{
+  [self deleteBackward:sender];
+}
+
 @end

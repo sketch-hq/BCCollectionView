@@ -12,16 +12,20 @@
 
 - (void)initiateDraggingSessionWithEvent:(NSEvent *)anEvent
 {
-  NSUInteger index    = [self indexOfItemAtPoint:mouseDownLocation];
+  NSUInteger index = [self indexOfItemAtPoint:mouseDownLocation];
+  [self selectItemAtIndex:index];
+  
   NSRect itemRect     = [self rectOfItemAtIndex:index];
   NSView *currentView = [[self viewControllerForItemAtIndex:index] view];
   NSData *imageData   = [currentView dataWithPDFInsideRect:NSMakeRect(0,0,NSWidth(itemRect),NSHeight(itemRect))];
   NSImage *pdfImage   = [[[NSImage alloc] initWithData:imageData] autorelease];
   NSImage *dragImage  = [[NSImage alloc] initWithSize:[pdfImage size]];
   
-  [dragImage lockFocus];
-  [pdfImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:0.5];
-  [dragImage unlockFocus];
+  if ([dragImage size].width > 0 && [dragImage size].height > 0) {
+    [dragImage lockFocus];
+    [pdfImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:0.5];
+    [dragImage unlockFocus];
+  }
   
   NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
   [self delegateWriteIndexes:selectionIndexes toPasteboard:pasteboard];
@@ -67,6 +71,17 @@
   
   if ([delegate respondsToSelector:@selector(collectionView:draggingEnded:)])
     [delegate collectionView:self draggingEnded:sender];
+}
+
+- (void)draggingExited:(id<NSDraggingInfo>)sender
+{
+  if (dragHoverIndex != NSNotFound) {
+    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+    [self setDragHoverIndex:NSNotFound];
+  }
+  
+  if ([delegate respondsToSelector:@selector(collectionView:draggingExited:)])
+    [delegate collectionView:self draggingExited:sender];
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender

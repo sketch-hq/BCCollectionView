@@ -37,6 +37,9 @@ enum {
 - (BOOL)collectionView:(BCCollectionView *)collectionView shouldSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 - (void)collectionView:(BCCollectionView *)collectionView didSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 - (void)collectionView:(BCCollectionView *)collectionView didDeselectItem:(id)anItem withViewController:(NSViewController *)viewController;
+- (void)collectionViewSelectionDidChange:(BCCollectionView *)collectionView;
+
+- (void)collectionView:(BCCollectionView *)collectionView didClickItem:(id)anItem withViewController:(NSViewController *)viewController;
 
 - (void)collectionViewDidScroll:(BCCollectionView *)collectionView inDirection:(NSUInteger)scrollDirection;
 - (void)collectionView:(BCCollectionView *)collectionView didDoubleClickViewControllerAtIndex:(NSViewController *)viewController;
@@ -57,4 +60,12 @@ enum {
       onViewController:(NSViewController *)viewController
                forItem:(id)item;
 - (void)collectionView:(BCCollectionView *)collectionView draggingEnded:(id <NSDraggingInfo>)draggingInfo;
+- (void)collectionView:(BCCollectionView *)collectionView draggingExited:(id <NSDraggingInfo>)draggingInfo;
+
+//key events
+- (void)collectionView:(BCCollectionView *)collectionView deleteItemsAtIndexes:(NSIndexSet *)indexSet;
+
+//contextual menu
+- (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet
+;
 @end

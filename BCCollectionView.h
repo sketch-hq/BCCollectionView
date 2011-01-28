@@ -30,6 +30,7 @@
   NSIndexSet *originalSelectionIndexes;
   NSInteger dragHoverIndex;
   
+  BOOL isDragging;
   BOOL firstDrag;
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
