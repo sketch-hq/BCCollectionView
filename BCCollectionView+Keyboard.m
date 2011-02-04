@@ -15,6 +15,37 @@
   [self interpretKeyEvents:[NSArray arrayWithObject:theEvent]];
 }
 
+- (void)clearAccumulatedBuffer
+{
+  self.accumulatedKeyStrokes = @"";
+}
+
+- (void)insertText:(id)aString
+{
+  if ([delegate respondsToSelector:@selector(collectionView:nameOfItem:startsWith:)]) {
+    [[NSRunLoop currentRunLoop] cancelPerformSelector:@selector(clearAccumulatedBuffer) target:self argument:nil];
+    [self performSelector:@selector(clearAccumulatedBuffer) withObject:nil afterDelay:1.0];
+    
+    self.accumulatedKeyStrokes = [[accumulatedKeyStrokes stringByAppendingString:aString] lowercaseString];
+    
+    NSInteger firstIndex = [contentArray indexOfObjectWithOptions:NSEnumerationConcurrent passingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+      return [delegate collectionView:self nameOfItem:obj startsWith:accumulatedKeyStrokes];
+    }];
+    if (firstIndex != NSNotFound) {
+      [self deselectAllItems];
+      [self selectItemAtIndex:firstIndex];
+      
+      if (NSHeight([self frame]) > NSHeight([self visibleRect])) {
+        NSScrollView *scrollView = [self enclosingScrollView];
+        NSClipView *clipView     = [[self enclosingScrollView] contentView];
+        
+        [clipView scrollToPoint:NSMakePoint(0, MIN(NSHeight([self frame])-NSHeight([self visibleRect]),[self rectOfItemAtIndex:firstIndex].origin.y))];
+        [scrollView reflectScrolledClipView:clipView];
+      }
+    }
+  }
+}
+
 - (void)moveLeft:(id)sender
 {
   NSUInteger index = lastSelectionIndex;

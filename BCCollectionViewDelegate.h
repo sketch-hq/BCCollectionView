@@ -64,6 +64,10 @@ enum {
 
 //key events
 - (void)collectionView:(BCCollectionView *)collectionView deleteItemsAtIndexes:(NSIndexSet *)indexSet;
+- (BOOL)collectionView:(BCCollectionView *)collectionView nameOfItem:(id)anItem startsWith:(NSString *)startingString;
+
+//magnifiy events. This method is required BCCollectionView+Zoom is included
+- (NSRange)validScalingRangeForCollectionView:(BCCollectionView *)collectionView;
 
 //contextual menu
 - (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet

@@ -10,7 +10,7 @@
 #import "BCGeometryExtensions.h"
 
 @implementation BCCollectionView
-@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes;
+@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes;
 
 #pragma mark Setup and Teardown
 
@@ -23,6 +23,7 @@
     contentArray            = [[NSArray alloc] init];
     selectionIndexes        = [[NSMutableIndexSet alloc] init];
     dragHoverIndex          = NSNotFound;
+    accumulatedKeyStrokes   = [[NSString alloc] init];
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
@@ -39,14 +40,18 @@
 {
   if ([keyPath isEqualToString:@"backgroundColor"])
     [self setNeedsDisplay:YES];
-  else
+  else if ([keyPath isEqual:zoomValueObserverKey]) {
+    if ([self respondsToSelector:@selector(zoomValueDidChange)])
+      [self performSelector:@selector(zoomValueDidChange)];
+  } else
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
 
 - (void)dealloc
 {
   [self removeObserver:self forKeyPath:@"backgroundColor"];
-  
+  [[NSUserDefaults standardUserDefaults] removeObserver:self forKeyPath:zoomValueObserverKey];
+
   NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
   [center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
   [center removeObserver:self name:NSViewFrameDidChangeNotification object:self];
@@ -56,6 +61,8 @@
   [contentArray release];
   [selectionIndexes release];
   [originalSelectionIndexes release];
+  [accumulatedKeyStrokes release];
+  [zoomValueObserverKey release];
   [super dealloc];
 }
 

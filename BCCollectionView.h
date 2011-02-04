@@ -32,6 +32,11 @@
   
   BOOL isDragging;
   BOOL firstDrag;
+  
+  NSString *zoomValueObserverKey;
+  CGFloat lastPinchMagnification;
+  
+  NSString *accumulatedKeyStrokes;
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
@@ -39,6 +44,7 @@
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
 @property (nonatomic, copy) NSArray *contentArray;
+@property (nonatomic, copy) NSString *zoomValueObserverKey, *accumulatedKeyStrokes;
 
 //designated way to load BCCollectionView
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
