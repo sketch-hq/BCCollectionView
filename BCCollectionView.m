@@ -1,10 +1,5 @@
-//
-//  BCCollectionView.m
-//  Fontcase
-//
 //  Created by Pieter Omvlee on 24/11/2010.
 //  Copyright 2010 Bohemian Coding. All rights reserved.
-//
 
 #import "BCCollectionView.h"
 #import "BCGeometryExtensions.h"

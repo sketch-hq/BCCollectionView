@@ -1,10 +1,5 @@
-//
-//  BCCollectionView+Dragging.h
-//  Fontcase
-//
 //  Created by Pieter Omvlee on 13/12/2010.
 //  Copyright 2010 Bohemian Coding. All rights reserved.
-//
 
 #import "BCCollectionView.h"
 

@@ -1,10 +1,5 @@
-//
-//  BCCollectionView+Dragging.m
-//  Fontcase
-//
 //  Created by Pieter Omvlee on 13/12/2010.
 //  Copyright 2010 Bohemian Coding. All rights reserved.
-//
 
 #import "BCCollectionView+Dragging.h"
 
@@ -29,7 +24,7 @@
   
   NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
   [self delegateWriteIndexes:selectionIndexes toPasteboard:pasteboard];
-  
+  [self retain];
   [self dragImage:[dragImage autorelease]
                at:NSMakePoint(NSMinX(itemRect), NSMaxY(itemRect))
            offset:NSMakeSize(0, 0)
@@ -39,6 +34,21 @@
         slideBack:YES];
 }
 
+- (void)draggedImage:(NSImage *)anImage beganAt:(NSPoint)aPoint
+{
+  [self retain];
+}
+
+- (void)draggedImage:(NSImage *)anImage endedAt:(NSPoint)aPoint operation:(NSDragOperation)operation
+{
+  [self autorelease];
+}
+
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+{
+  return [self draggingUpdated:sender];
+}
+
 - (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
 {
   if (dragHoverIndex != NSNotFound)
@@ -46,15 +56,21 @@
   
   NSPoint mouse    = [self convertPoint:[sender draggingLocation] fromView:nil];
   NSUInteger index = [self indexOfItemAtPoint:mouse];
-  
   NSDragOperation operation = NSDragOperationNone;
-  if ([selectionIndexes containsIndex:index])
-    [self setDragHoverIndex:NSNotFound];
-  else if ([self delegateCanDrop:sender onIndex:index]) {
-    [self setDragHoverIndex:index];
-    operation =  NSDragOperationMove;
-  } else
-    [self setDragHoverIndex:NSNotFound];
+  if ([sender draggingSource] == self) {
+    if ([selectionIndexes containsIndex:index])
+      [self setDragHoverIndex:NSNotFound];
+    else if ([self delegateCanDrop:sender onIndex:index]) {
+      [self setDragHoverIndex:index];
+      operation = NSDragOperationMove;
+    } else
+      [self setDragHoverIndex:NSNotFound]; 
+  } else {
+    if ([self delegateCanDrop:sender onIndex:index]) {
+      [self setDragHoverIndex:index];
+      operation = NSDragOperationCopy;
+    }
+  }
   
   if (dragHoverIndex != NSNotFound)
     [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
@@ -86,11 +102,12 @@
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
+  id item = nil;
+  if (dragHoverIndex >= 0 && dragHoverIndex <[contentArray count])
+    item = [contentArray objectAtIndex:dragHoverIndex];
+  
   if ([delegate respondsToSelector:@selector(collectionView:performDragOperation:onViewController:forItem:)])
-    return [delegate collectionView:self
-               performDragOperation:sender
-                   onViewController:[self viewControllerForItemAtIndex:dragHoverIndex]
-                            forItem:[contentArray objectAtIndex:dragHoverIndex]];
+    return [delegate collectionView:self performDragOperation:sender onViewController:[self viewControllerForItemAtIndex:dragHoverIndex] forItem:item];
   else
     return NO;
 }
