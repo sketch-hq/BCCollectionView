@@ -7,8 +7,6 @@
 @implementation BCCollectionView
 @synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes;
 
-#pragma mark Setup and Teardown
-
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
   self = [super initWithCoder:aDecoder];
