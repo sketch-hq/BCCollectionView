@@ -15,6 +15,7 @@
   NSMutableIndexSet   *selectionIndexes;
   
   NSColor *backgroundColor;
+  NSUInteger  numberOfPreRenderedRows;
   
 @private
   NSPoint mouseDownLocation;
@@ -35,6 +36,7 @@
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
+@property (nonatomic) NSUInteger numberOfPreRenderedRows;
 
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
@@ -60,6 +62,7 @@
 - (NSSize)cellSize;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 - (NSRange)rangeOfVisibleItems;
+- (NSRange)rangeOfVisibleItemsWithOverflow;
 
 - (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
 - (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex;

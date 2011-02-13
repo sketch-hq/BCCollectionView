@@ -5,7 +5,7 @@
 #import "BCGeometryExtensions.h"
 
 @implementation BCCollectionView
-@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes;
+@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows;
 
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
@@ -17,6 +17,7 @@
     selectionIndexes        = [[NSMutableIndexSet alloc] init];
     dragHoverIndex          = NSNotFound;
     accumulatedKeyStrokes   = [[NSString alloc] init];
+    numberOfPreRenderedRows = 1;
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
@@ -269,6 +270,18 @@
                              NSMakeRange(0, [contentArray count]));
 }
 
+- (NSRange)rangeOfVisibleItemsWithOverflow
+{
+  NSRange range = [self rangeOfVisibleItems];
+  NSInteger extraItems = [self numberOfItemsPerRow] * numberOfPreRenderedRows;
+  NSInteger min = range.location;
+  NSInteger max = range.location + range.length;
+  
+  min = MAX(0, min-extraItems);
+  max = MIN([contentArray count], max+extraItems);
+  return NSMakeRange(min, max-min);
+}
+
 #pragma mark Querying ViewControllers
 
 - (NSIndexSet *)indexesOfViewControllers
@@ -281,7 +294,7 @@
 
 - (NSIndexSet *)indexesOfInvisibleViewControllers
 {
-  NSRange visibleRange = [self rangeOfVisibleItems];
+  NSRange visibleRange = [self rangeOfVisibleItemsWithOverflow];
   return [[self indexesOfViewControllers] indexesPassingTest:^BOOL(NSUInteger idx, BOOL *stop) {
     return !NSLocationInRange(idx, visibleRange);
   }];
@@ -324,7 +337,7 @@
 - (void)addMissingViewControllersToView
 {
   dispatch_async(dispatch_get_main_queue(), ^{
-    [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItems]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItemsWithOverflow]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
       NSNumber *key = [NSNumber numberWithInteger:idx];
       if (![visibleViewControllers objectForKey:key]) {
         NSViewController *viewController = [self emptyViewControllerForInsertion];
