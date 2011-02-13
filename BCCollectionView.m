@@ -125,15 +125,20 @@
                forItem:[contentArray objectAtIndex:index]];
 }
 
+- (void)delegateCollectionViewSelectionDidChange
+{
+  if ([delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)]) {
+    [[NSRunLoop currentRunLoop] cancelPerformSelector:@selector(collectionViewSelectionDidChange:) target:delegate argument:self];
+    [(id)delegate performSelector:@selector(collectionViewSelectionDidChange:) withObject:self afterDelay:0.0];
+  }
+}
+
 - (void)delegateDidSelectItemAtIndex:(NSUInteger)index
 {
   if ([delegate respondsToSelector:@selector(collectionView:didSelectItem:withViewController:)])
     [delegate collectionView:self
          didSelectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
-  
-  if ([delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)])
-    [delegate collectionViewSelectionDidChange:self];
 }
 
 - (void)delegateDidDeselectItemAtIndex:(NSUInteger)index
@@ -143,8 +148,7 @@
        didDeselectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
   
-  if ([delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)])
-    [delegate collectionViewSelectionDidChange:self];
+  [self delegateCollectionViewSelectionDidChange];
 }
 
 - (void)delegateViewControllerBecameInvisibleAtIndex:(NSUInteger)index
@@ -367,6 +371,8 @@
     [selectionIndexes addIndex:index];
     [self delegateUpdateSelectionForItemAtIndex:index];
     [self delegateDidSelectItemAtIndex:index];
+    if (!bulkSelecting)
+      [self delegateCollectionViewSelectionDidChange];
     if ([self shoulDrawSelections])
       [self setNeedsDisplayInRect:[self rectOfItemAtIndex:index]];
   }
@@ -381,6 +387,7 @@
     [self selectItemAtIndex:idx inBulk:YES];
   }];
   lastSelectionIndex = [indexes firstIndex];
+  [self delegateCollectionViewSelectionDidChange];
 }
 
 - (void)deselectItemAtIndex:(NSUInteger)index
