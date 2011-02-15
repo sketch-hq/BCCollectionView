@@ -4,6 +4,7 @@
 #import "BCCollectionView+Mouse.h"
 #import "BCGeometryExtensions.h"
 #import "BCCollectionView+Dragging.h"
+#import "BCCollectionViewLayoutManager.h"
 
 @implementation BCCollectionView (BCCollectionView_Mouse)
 
@@ -19,7 +20,7 @@
   isDragging           = YES;
   mouseDownLocation    = [self convertPoint:[theEvent locationInWindow] fromView:nil];
   mouseDraggedLocation = mouseDownLocation;
-  NSUInteger index     = [self indexOfItemContentRectAtPoint:mouseDownLocation];
+  NSUInteger index     = [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
   
   if (index != NSNotFound && [delegate respondsToSelector:@selector(collectionView:didClickItem:withViewController:)])
     [delegate collectionView:self didClickItem:[contentArray objectAtIndex:index] withViewController:[visibleViewControllers objectForKey:[NSNumber numberWithInt:index]]];
@@ -75,7 +76,7 @@
 - (void)mouseDragged:(NSEvent *)theEvent
 {
   if (isDragging) {
-    NSUInteger index = [self indexOfItemContentRectAtPoint:mouseDownLocation];
+    NSUInteger index = [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
     if (firstDrag && index != NSNotFound && [selectionIndexes count] > 0 && [self delegateSupportsDragForItemsAtIndexes:selectionIndexes])
       [self initiateDraggingSessionWithEvent:theEvent];
     else

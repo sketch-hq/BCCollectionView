@@ -4,9 +4,11 @@
 #import <Cocoa/Cocoa.h>
 #import "BCCollectionViewDelegate.h"
 
+@class BCCollectionViewLayoutManager;
 @interface BCCollectionView : NSView
 {
   IBOutlet id<BCCollectionViewDelegate> delegate;
+  BCCollectionViewLayoutManager *layoutManager;
   
   NSArray *contentArray;
   
@@ -57,18 +59,9 @@
 - (NSIndexSet *)selectionIndexes;
 
 //Basic Cell Information
-- (NSUInteger)numberOfRows;
-- (NSUInteger)numberOfItemsPerRow;
 - (NSSize)cellSize;
-- (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 - (NSRange)rangeOfVisibleItems;
 - (NSRange)rangeOfVisibleItemsWithOverflow;
-
-- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
-- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex;
-
-- (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
-- (NSUInteger)indexOfItemContentRectAtPoint:(NSPoint)p;
 
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect;
 - (NSIndexSet *)indexesOfItemContentRectsInRect:(NSRect)aRect;

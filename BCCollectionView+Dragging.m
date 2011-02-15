@@ -2,15 +2,16 @@
 //  Copyright 2010 Bohemian Coding. All rights reserved.
 
 #import "BCCollectionView+Dragging.h"
+#import "BCCollectionViewLayoutManager.h"
 
 @implementation BCCollectionView (BCCollectionView_Dragging)
 
 - (void)initiateDraggingSessionWithEvent:(NSEvent *)anEvent
 {
-  NSUInteger index = [self indexOfItemAtPoint:mouseDownLocation];
+  NSUInteger index = [layoutManager indexOfItemAtPoint:mouseDownLocation];
   [self selectItemAtIndex:index];
   
-  NSRect itemRect     = [self rectOfItemAtIndex:index];
+  NSRect itemRect     = [layoutManager rectOfItemAtIndex:index];
   NSView *currentView = [[self viewControllerForItemAtIndex:index] view];
   NSData *imageData   = [currentView dataWithPDFInsideRect:NSMakeRect(0,0,NSWidth(itemRect),NSHeight(itemRect))];
   NSImage *pdfImage   = [[[NSImage alloc] initWithData:imageData] autorelease];
@@ -52,10 +53,10 @@
 - (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
 {
   if (dragHoverIndex != NSNotFound)
-    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
   
   NSPoint mouse    = [self convertPoint:[sender draggingLocation] fromView:nil];
-  NSUInteger index = [self indexOfItemAtPoint:mouse];
+  NSUInteger index = [layoutManager indexOfItemAtPoint:mouse];
   NSDragOperation operation = NSDragOperationNone;
   if ([sender draggingSource] == self) {
     if ([selectionIndexes containsIndex:index])
@@ -73,7 +74,7 @@
   }
   
   if (dragHoverIndex != NSNotFound)
-    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
   
   return operation;
 }
@@ -81,7 +82,7 @@
 - (void)draggingEnded:(id <NSDraggingInfo>)sender
 {
   if (dragHoverIndex != NSNotFound)
-    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
   
   [self setDragHoverIndex:NSNotFound];
   
@@ -92,7 +93,7 @@
 - (void)draggingExited:(id<NSDraggingInfo>)sender
 {
   if (dragHoverIndex != NSNotFound) {
-    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
     [self setDragHoverIndex:NSNotFound];
   }
   
@@ -119,7 +120,7 @@
 {
   if (hoverIndex != dragHoverIndex) {
     if (dragHoverIndex != NSNotFound)
-      [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+      [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
     
     if ([delegate respondsToSelector:@selector(collectionView:dragExitedViewController:)])
       [delegate collectionView:self dragExitedViewController:[self viewControllerForItemAtIndex:dragHoverIndex]];
@@ -130,7 +131,7 @@
       [delegate collectionView:self dragEnteredViewController:[self viewControllerForItemAtIndex:dragHoverIndex]];
     
     if (dragHoverIndex != NSNotFound)
-      [self setNeedsDisplayInRect:[self rectOfItemAtIndex:dragHoverIndex]];
+      [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
   }
 }
 

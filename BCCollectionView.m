@@ -3,6 +3,7 @@
 
 #import "BCCollectionView.h"
 #import "BCGeometryExtensions.h"
+#import "BCCollectionViewLayoutManager.h"
 
 @implementation BCCollectionView
 @synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows;
@@ -18,6 +19,7 @@
     dragHoverIndex          = NSNotFound;
     accumulatedKeyStrokes   = [[NSString alloc] init];
     numberOfPreRenderedRows = 1;
+    layoutManager           = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
@@ -50,6 +52,7 @@
   [center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
   [center removeObserver:self name:NSViewFrameDidChangeNotification object:self];
   
+  [layoutManager release];
   [reusableViewControllers release];
   [visibleViewControllers release];
   [contentArray release];
@@ -158,75 +161,15 @@
     [delegate collectionView:self viewControllerBecameInvisible:[self viewControllerForItemAtIndex:index]];
 }
 
-#pragma mark Basic Information
-
-- (NSUInteger)numberOfRows
-{
-  return MAX(1, ceil((float)[contentArray count]/(float)[self numberOfItemsPerRow]));
-}
-
-- (NSUInteger)numberOfItemsPerRow
-{
-  return MAX(1, [self frame].size.width/[self cellSize].width);
-}
-
 - (NSSize)cellSize
 {
   return [delegate cellSizeForCollectionView:self];
 }
 
-- (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p
-{
-  NSUInteger index = (int)(p.y / [self cellSize].height) * [self numberOfItemsPerRow] + p.x / [self cellSize].width;
-  if (index >= [contentArray count])
-    return NSNotFound;
-  else
-    return index;
-}
-
-- (NSUInteger)indexOfItemAtPoint:(NSPoint)p
-{
-  if (p.x > [self cellSize].width * [self numberOfItemsPerRow])
-    return NSNotFound;
-  
-  return [self indexOfItemAtPointOrClosestGuess:p];
-}
-
-- (NSUInteger)indexOfItemContentRectAtPoint:(NSPoint)p
-{
-  NSUInteger index = [self indexOfItemAtPoint:p];
-  if (index != NSNotFound) {
-    if (NSPointInRect(p, [self contentRectOfItemAtIndex:index]))
-      return index;
-    else
-      return NSNotFound;
-  }
-  return index;
-}
-
-- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex
-{
-  NSSize cellSize = [self cellSize];
-  NSUInteger rowIndex    = anIndex / [self numberOfItemsPerRow];
-  NSUInteger columnIndex = anIndex % [self numberOfItemsPerRow];
-  
-  return NSMakeRect(columnIndex*cellSize.width, rowIndex*cellSize.height, cellSize.width, cellSize.height);
-}
-
-- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex
-{
-  NSRect rect = [self rectOfItemAtIndex:anIndex];
-  if ([delegate respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)]) {
-    NSSize inset = [delegate insetMarginForSelectingItemsInCollectionView:self];
-    return NSInsetRect(rect, inset.width, inset.height);
-  } else
-    return rect;
-}
-
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect
 {
-  NSUInteger firstIndex = [self indexOfItemAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
-  NSUInteger lastIndex  = [self indexOfItemAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
+  NSUInteger firstIndex = [layoutManager indexOfItemAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
+  NSUInteger lastIndex  = [layoutManager indexOfItemAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
   
   if (firstIndex == NSNotFound)
     firstIndex = 0;
@@ -236,7 +179,7 @@
   
   NSMutableIndexSet *indexes = [NSMutableIndexSet indexSet];
   for (NSUInteger i=firstIndex; i<lastIndex+1; i++) {
-    if (NSIntersectsRect(aRect, [self rectOfItemAtIndex:i]))
+    if (NSIntersectsRect(aRect, [layoutManager rectOfItemAtIndex:i]))
       [indexes addIndex:i];
   }
   return indexes;
@@ -244,8 +187,8 @@
 
 - (NSIndexSet *)indexesOfItemContentRectsInRect:(NSRect)aRect
 {
-  NSUInteger firstIndex = [self indexOfItemContentRectAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
-  NSUInteger lastIndex  = [self indexOfItemContentRectAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
+  NSUInteger firstIndex = [layoutManager indexOfItemContentRectAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
+  NSUInteger lastIndex  = [layoutManager indexOfItemContentRectAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
   
   if (firstIndex == NSNotFound)
     firstIndex = 0;
@@ -255,7 +198,7 @@
   
   NSMutableIndexSet *indexes = [NSMutableIndexSet indexSet];
   for (NSUInteger i=firstIndex; i<lastIndex+1; i++) {
-    if (NSIntersectsRect(aRect, [self contentRectOfItemAtIndex:i]))
+    if (NSIntersectsRect(aRect, [layoutManager contentRectOfItemAtIndex:i]))
       [indexes addIndex:i];
   }
   return indexes;
@@ -264,8 +207,8 @@
 - (NSRange)rangeOfVisibleItems
 {
   NSRect visibleRect = [self visibleRect];
-  NSUInteger firstIndex = [self indexOfItemAtPointOrClosestGuess:NSMakePoint(NSMinX(visibleRect), NSMinY(visibleRect))];
-  NSUInteger lastIndex  = [self indexOfItemAtPointOrClosestGuess:NSMakePoint(NSMaxX(visibleRect), NSMaxY(visibleRect))];
+  NSUInteger firstIndex = [layoutManager indexOfItemAtPointOrClosestGuess:NSMakePoint(NSMinX(visibleRect), NSMinY(visibleRect))];
+  NSUInteger lastIndex  = [layoutManager indexOfItemAtPointOrClosestGuess:NSMakePoint(NSMaxX(visibleRect), NSMaxY(visibleRect))];
   return NSIntersectionRange(NSMakeRange(firstIndex, lastIndex-firstIndex),
                              NSMakeRange(0, [contentArray count]));
 }
@@ -273,7 +216,7 @@
 - (NSRange)rangeOfVisibleItemsWithOverflow
 {
   NSRange range = [self rangeOfVisibleItems];
-  NSInteger extraItems = [self numberOfItemsPerRow] * numberOfPreRenderedRows;
+  NSInteger extraItems = [layoutManager numberOfItemsAtRow:0] * numberOfPreRenderedRows;
   NSInteger min = range.location;
   NSInteger max = range.location + range.length;
   
@@ -342,7 +285,7 @@
       if (![visibleViewControllers objectForKey:key]) {
         NSViewController *viewController = [self emptyViewControllerForInsertion];
         [visibleViewControllers setObject:viewController forKey:key];
-        [[viewController view] setFrame:[self rectOfItemAtIndex:idx]];
+        [[viewController view] setFrame:[layoutManager rectOfItemAtIndex:idx]];
         [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
         
         id itemToLoad = [contentArray objectAtIndex:idx];
@@ -358,7 +301,7 @@
 - (void)moveViewControllersToProperPosition
 {
   for (NSNumber *number in visibleViewControllers)
-    [[[visibleViewControllers objectForKey:number] view] setFrame:[self rectOfItemAtIndex:[number integerValue]]];
+    [[[visibleViewControllers objectForKey:number] view] setFrame:[layoutManager rectOfItemAtIndex:[number integerValue]]];
 }
 
 #pragma mark Selecting and Deselecting Items
@@ -387,7 +330,7 @@
     if (!bulkSelecting)
       [self delegateCollectionViewSelectionDidChange];
     if ([self shoulDrawSelections])
-      [self setNeedsDisplayInRect:[self rectOfItemAtIndex:index]];
+      [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
   }
   
   if (!bulkSelecting)
@@ -407,7 +350,7 @@
 {
   [selectionIndexes removeIndex:index];
   if ([self shoulDrawSelections])
-    [self setNeedsDisplayInRect:[self rectOfItemAtIndex:index]];
+    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
   
   [self delegateDidDeselectItemAtIndex:index];
   [self delegateUpdateDeselectionForItemAtIndex:index];
@@ -480,7 +423,7 @@
 {
   NSRect frame = [self frame];
   frame.size.height = [self visibleRect].size.height;
-  frame.size.height = MAX(frame.size.height, [self numberOfRows] * [self cellSize].height);
+  frame.size.height = MAX(frame.size.height, [layoutManager numberOfRows] * [self cellSize].height);
   [self setFrame:frame];
 }
 
