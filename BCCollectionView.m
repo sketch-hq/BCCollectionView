@@ -7,6 +7,7 @@
 
 @implementation BCCollectionView
 @synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows;
+@dynamic visibleViewControllerArray;
 
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
@@ -18,7 +19,7 @@
     selectionIndexes        = [[NSMutableIndexSet alloc] init];
     dragHoverIndex          = NSNotFound;
     accumulatedKeyStrokes   = [[NSString alloc] init];
-    numberOfPreRenderedRows = 1;
+    numberOfPreRenderedRows = 3;
     layoutManager           = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
@@ -233,6 +234,11 @@
   for (NSNumber *number in [visibleViewControllers allKeys])
     [set addIndex:[number integerValue]];
   return set;
+}
+
+- (NSArray *)visibleViewControllerArray
+{
+  return [visibleViewControllers allValues];
 }
 
 - (NSIndexSet *)indexesOfInvisibleViewControllers

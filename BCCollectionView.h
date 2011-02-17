@@ -45,6 +45,8 @@
 @property (nonatomic, copy) NSArray *contentArray;
 @property (nonatomic, copy) NSString *zoomValueObserverKey, *accumulatedKeyStrokes;
 
+@property (readonly) NSArray *visibleViewControllerArray;
+
 //designated way to load BCCollectionView
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
 
