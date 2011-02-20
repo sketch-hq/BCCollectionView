@@ -15,7 +15,6 @@
   return self;
 }
 
-
 - (NSUInteger)numberOfRows
 {
   return MAX(1, ceil((float)[[collectionView contentArray] count]/(float)[self numberOfItemsPerRow]));
@@ -23,7 +22,7 @@
 
 - (NSUInteger)numberOfItemsPerRow
 {
-  return MAX(1, [collectionView frame].size.width/[self cellSize].width);
+  return MAX(1, NSWidth([collectionView frame])/[self cellSize].width);
 }
 
 - (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex
@@ -70,8 +69,8 @@
   NSSize cellSize = [self cellSize];
   NSUInteger rowIndex    = anIndex / [self numberOfItemsPerRow];
   NSUInteger columnIndex = anIndex % [self numberOfItemsPerRow];
-  
-  return NSMakeRect(columnIndex*cellSize.width, rowIndex*cellSize.height, cellSize.width, cellSize.height);
+  NSInteger gap = (NSWidth([collectionView visibleRect])-[self numberOfItemsPerRow]*cellSize.width)/([self numberOfItemsPerRow]-1);
+  return NSMakeRect(columnIndex*(cellSize.width+gap), rowIndex*cellSize.height, cellSize.width, cellSize.height);
 }
 
 - (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex

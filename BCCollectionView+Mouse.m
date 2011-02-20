@@ -37,8 +37,6 @@
     [self deselectItemAtIndex:index];
   else
     [self selectItemAtIndex:index];
-  
-  firstDrag = YES;
 }
 
 - (void)regularMouseDragged:(NSEvent *)anEvent
@@ -77,11 +75,13 @@
 {
   if (isDragging) {
     NSUInteger index = [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
-    if (firstDrag && index != NSNotFound && [selectionIndexes count] > 0 && [self delegateSupportsDragForItemsAtIndexes:selectionIndexes])
-      [self initiateDraggingSessionWithEvent:theEvent];
-    else
+    if (index != NSNotFound && [selectionIndexes count] > 0 && [self delegateSupportsDragForItemsAtIndexes:selectionIndexes]) {
+      NSPoint mouse = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+      CGFloat distance = sqrt(pow(mouse.x-mouseDownLocation.x,2)+pow(mouse.y-mouseDownLocation.y,2));
+      if (distance > 3)
+        [self initiateDraggingSessionWithEvent:theEvent];
+    } else
       [self regularMouseDragged:theEvent];
-    firstDrag = NO;
   }
 }
 
