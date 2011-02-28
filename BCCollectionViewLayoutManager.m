@@ -11,23 +11,35 @@
   self = [super init];
   if (self) {
     collectionView = aCollectionView;
+    numberOfRows = -1;
   }
   return self;
 }
 
-- (NSUInteger)numberOfRows
+- (void)willReload
 {
-  return MAX(1, ceil((float)[[collectionView contentArray] count]/(float)[self numberOfItemsPerRow]));
+  numberOfRows = -1;
 }
 
-- (NSUInteger)numberOfItemsPerRow
+#pragma mark -
+#pragma mark Primitives
+
+- (NSUInteger)numberOfRows
 {
-  return MAX(1, NSWidth([collectionView frame])/[self cellSize].width);
+  if (numberOfRows == -1) {
+    NSInteger leftOver = [[collectionView contentArray] count];
+    numberOfRows = 0;
+    while (leftOver > 0) {
+      leftOver -= [self numberOfItemsAtRow:numberOfRows];
+      numberOfRows++;
+    }
+  }
+  return numberOfRows;
 }
 
 - (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex
 {
-  return [self numberOfItemsPerRow];
+  return MAX(1, [collectionView frame].size.width/[self cellSize].width);
 }
 
 - (NSSize)cellSize
@@ -35,9 +47,27 @@
   return [collectionView cellSize];
 }
 
+
+- (NSUInteger)rowOfItemAtIndex:(NSInteger)anIndex
+{
+  NSInteger rowIndex = 0;
+  while (anIndex >= [self numberOfItemsAtRow:rowIndex]) {
+    anIndex -= [self numberOfItemsAtRow:rowIndex];
+    rowIndex++;
+  }
+  return rowIndex;
+}
+
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p
 {
-  NSUInteger index = (int)(p.y / [self cellSize].height) * [self numberOfItemsPerRow] + p.x / [self cellSize].width;
+  NSUInteger rowIndex = (int)p.y / [self cellSize].height;
+  
+  NSInteger rowFirstIndex = 0;
+  for (NSInteger i=0; i<rowIndex; i++)
+    rowFirstIndex += [self numberOfItemsAtRow:i];
+  
+  NSInteger gap = (NSWidth([collectionView visibleRect])-[self numberOfItemsAtRow:rowIndex]*[self cellSize].width)/([self numberOfItemsAtRow:rowIndex]-1);
+  NSUInteger index = rowFirstIndex + MIN([self numberOfItemsAtRow:rowIndex]-1, p.x / ([self cellSize].width+gap));
   if (index >= [[collectionView contentArray] count])
     return NSNotFound;
   else
@@ -46,7 +76,9 @@
 
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p
 {
-  if (p.x > [self cellSize].width * [self numberOfItemsPerRow])
+  NSUInteger rowIndex = (int)p.y / [self cellSize].height;
+  NSInteger gap = (NSWidth([collectionView visibleRect])-[self numberOfItemsAtRow:rowIndex]*[self cellSize].width)/([self numberOfItemsAtRow:rowIndex]-1);
+  if (p.x > ([self cellSize].width+gap) * [self numberOfItemsAtRow:rowIndex])
     return NSNotFound;
   
   return [self indexOfItemAtPointOrClosestGuess:p];
@@ -67,9 +99,14 @@
 - (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex
 {
   NSSize cellSize = [self cellSize];
-  NSUInteger rowIndex    = anIndex / [self numberOfItemsPerRow];
-  NSUInteger columnIndex = anIndex % [self numberOfItemsPerRow];
-  NSInteger gap = (NSWidth([collectionView visibleRect])-[self numberOfItemsPerRow]*cellSize.width)/([self numberOfItemsPerRow]-1);
+  
+  NSInteger rowIndex    = 0;
+  NSInteger columnIndex = anIndex;
+  while (columnIndex >= [self numberOfItemsAtRow:rowIndex]) {
+    columnIndex -= [self numberOfItemsAtRow:rowIndex];
+    rowIndex++;
+  }
+  NSInteger gap = (NSWidth([collectionView visibleRect])-[self numberOfItemsAtRow:rowIndex]*cellSize.width)/([self numberOfItemsAtRow:rowIndex]-1);
   return NSMakeRect(columnIndex*(cellSize.width+gap), rowIndex*cellSize.height, cellSize.width, cellSize.height);
 }
 
@@ -82,5 +119,4 @@
   } else
     return rect;
 }
-
 @end

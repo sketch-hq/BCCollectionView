@@ -7,12 +7,14 @@
 @interface BCCollectionViewLayoutManager : NSObject
 {
   BCCollectionView *collectionView;
+  NSInteger numberOfRows;
 }
 - (id)initWithCollectionView:(BCCollectionView *)collectionView; //assigned
 
+- (void)willReload;
 - (NSUInteger)numberOfRows;
-- (NSUInteger)numberOfItemsPerRow;
 - (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex;
+- (NSUInteger)rowOfItemAtIndex:(NSInteger)anIndex;
 - (NSSize)cellSize;
 - (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 

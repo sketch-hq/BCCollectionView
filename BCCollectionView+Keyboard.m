@@ -45,7 +45,8 @@
 - (void)moveLeft:(id)sender
 {
   NSUInteger index = lastSelectionIndex;
-  if (index % [layoutManager numberOfItemsPerRow] != 0) {
+  
+  if (index % [layoutManager numberOfItemsAtRow:index] != 0) {
     [self deselectAllItems];
     NSUInteger newIndex = index-1;
     [self selectItemAtIndex:newIndex];
@@ -55,7 +56,7 @@
 
 - (void)moveLeftAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex % [layoutManager numberOfItemsPerRow] != 0) {
+  if (lastSelectionIndex % [layoutManager numberOfItemsAtRow:lastSelectionIndex] != 0) {
     NSUInteger index = lastSelectionIndex-1;
     if ([selectionIndexes containsIndex:index])
       [self deselectItemAtIndex:lastSelectionIndex];
@@ -69,7 +70,7 @@
 - (void)moveRight:(id)sender
 {
   NSUInteger index = lastSelectionIndex;
-  if (index % [layoutManager numberOfItemsPerRow] != [layoutManager numberOfItemsPerRow]-1) {
+  if (index % [layoutManager numberOfItemsAtRow:index] != [layoutManager numberOfItemsAtRow:index]-1) {
     [self deselectAllItems];
     NSUInteger newIndex = index+1;
     [self selectItemAtIndex:newIndex];
@@ -79,7 +80,7 @@
 
 - (void)moveRightAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex % [layoutManager numberOfItemsPerRow] != [layoutManager numberOfItemsPerRow]-1) {
+  if (lastSelectionIndex % [layoutManager numberOfItemsAtRow:lastSelectionIndex] != [layoutManager numberOfItemsAtRow:lastSelectionIndex]-1) {
     NSUInteger index = lastSelectionIndex+1;
     if ([selectionIndexes containsIndex:index])
       [self deselectItemAtIndex:lastSelectionIndex];
@@ -93,9 +94,9 @@
 - (void)moveUp:(id)sender
 {
   NSUInteger index = lastSelectionIndex;
-  if (index > [layoutManager numberOfItemsPerRow]-1) {
+  if (index > [layoutManager numberOfItemsAtRow:index]-1) {
     [self deselectAllItems];
-    NSUInteger newIndex = index-[layoutManager numberOfItemsPerRow];
+    NSUInteger newIndex = index-[layoutManager numberOfItemsAtRow:index];
     [self selectItemAtIndex:newIndex];
     [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
   }
@@ -103,9 +104,9 @@
 
 - (void)moveUpAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex > [layoutManager numberOfItemsPerRow]-1) {
-    NSUInteger index = lastSelectionIndex - [layoutManager numberOfItemsPerRow];
-    NSRange range    = NSMakeRange(index, [layoutManager numberOfItemsPerRow]);
+  if (lastSelectionIndex > [layoutManager numberOfItemsAtRow:lastSelectionIndex]-1) {
+    NSUInteger index = lastSelectionIndex - [layoutManager numberOfItemsAtRow:lastSelectionIndex];
+    NSRange range    = NSMakeRange(index, [layoutManager numberOfItemsAtRow:lastSelectionIndex]);
     if ([selectionIndexes containsIndex:index]) {
       range.location++;
       [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
@@ -119,9 +120,9 @@
 - (void)moveDown:(id)sender
 {
   NSUInteger index = lastSelectionIndex;
-  if (index + [layoutManager numberOfItemsPerRow] < [contentArray count]) {
+  if (index + [layoutManager numberOfItemsAtRow:index] < [contentArray count]) {
     [self deselectAllItems];
-    NSUInteger newIndex = index + [layoutManager numberOfItemsPerRow];
+    NSUInteger newIndex = index + [layoutManager numberOfItemsAtRow:index];
     [self selectItemAtIndex:newIndex];
     [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
   }
@@ -130,9 +131,9 @@
 - (void)moveDownAndModifySelection:(id)sender
 {
   NSUInteger index = lastSelectionIndex;
-  if (index + [layoutManager numberOfItemsPerRow] < [contentArray count]) {
-    NSUInteger index = lastSelectionIndex + [layoutManager numberOfItemsPerRow];
-    NSRange range    = NSMakeRange(lastSelectionIndex, [layoutManager numberOfItemsPerRow]);
+  if (index + [layoutManager numberOfItemsAtRow:index] < [contentArray count]) {
+    NSUInteger index = lastSelectionIndex + [layoutManager numberOfItemsAtRow:index];
+    NSRange range    = NSMakeRange(lastSelectionIndex, [layoutManager numberOfItemsAtRow:index]);
     if ([selectionIndexes containsIndex:index])
       [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
     else {

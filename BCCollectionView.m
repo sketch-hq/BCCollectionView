@@ -428,8 +428,7 @@
 - (void)resizeFrameToFitContents
 {
   NSRect frame = [self frame];
-  frame.size.height = [self visibleRect].size.height;
-  frame.size.height = MAX(frame.size.height, [layoutManager numberOfRows] * [self cellSize].height);
+  frame.size.height = MAX([self visibleRect].size.height, [layoutManager numberOfRows] * [self cellSize].height);
   [self setFrame:frame];
 }
 
@@ -441,6 +440,7 @@
     return;
   
   self.contentArray = newContent;
+  [layoutManager willReload];
   [self resizeFrameToFitContents];
   
   if (shouldEmptyCaches) {
@@ -480,8 +480,10 @@
 
 - (void)viewDidResize
 {
+  [layoutManager willReload];
   [self resizeFrameToFitContents];
   dispatch_async(dispatch_get_main_queue(), ^{
+    [layoutManager willReload];
     [self moveViewControllersToProperPosition];
     [self addMissingViewControllersToView];
   });
@@ -493,6 +495,11 @@
     return [delegate collectionView:self menuForItemsAtIndexes:[self selectionIndexes]];
   else
     return nil;
+}
+
+- (BOOL)isOpaque
+{
+  return YES;
 }
 
 @end
