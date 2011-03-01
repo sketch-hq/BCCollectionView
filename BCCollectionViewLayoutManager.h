@@ -8,19 +8,25 @@
 {
   BCCollectionView *collectionView;
   NSInteger numberOfRows;
+  NSArray *groups;
+  NSMutableArray *itemLayouts;
+  
+  NSOperationQueue *queue;
 }
+@property (copy) NSArray *groups;
 - (id)initWithCollectionView:(BCCollectionView *)collectionView; //assigned
+- (void)reloadWithCompletionBlock:(dispatch_block_t)completionBlock;
 
-- (void)willReload;
+#pragma mark Primitives
 - (NSUInteger)numberOfRows;
 - (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex;
-- (NSUInteger)rowOfItemAtIndex:(NSInteger)anIndex;
 - (NSSize)cellSize;
-- (NSUInteger)indexOfItemAtPointOrClosestGuess:(NSPoint)p;
 
-- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
-- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex;
-
+#pragma mark From Point to Index
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p;
 - (NSUInteger)indexOfItemContentRectAtPoint:(NSPoint)p;
+
+#pragma mark From Index to Rect
+- (NSRect)rectOfItemAtIndex:(NSUInteger)anIndex;
+- (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex;
 @end

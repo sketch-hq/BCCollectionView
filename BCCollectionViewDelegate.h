@@ -3,7 +3,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@class BCCollectionView;
+@class BCCollectionView, BCCollectionViewGroup;
 
 enum {
   BCCollectionViewScrollDirectionUp   = 0,
@@ -43,6 +43,8 @@ enum {
 //defaults to YES
 - (BOOL)collectionViewShouldDrawSelections:(BCCollectionView *)collectionView;
 - (BOOL)collectionViewShouldDrawHover:(BCCollectionView *)collectionView;
+
+- (void)collectionView:(BCCollectionView *)collectionView drawGroupSeparator:(BCCollectionViewGroup *)group inRect:(NSRect)rect;
 
 //managing Drag & Drop (in order of occurence)
 - (BOOL)collectionView:(BCCollectionView *)collectionView canDragItemsAtIndexes:(NSIndexSet *)indexSet;
