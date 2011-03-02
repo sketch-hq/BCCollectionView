@@ -3,7 +3,7 @@
 
 #import "BCCollectionView+Keyboard.h"
 #import "BCCollectionViewLayoutManager.h"
-#import "BCCollectionViewItemLayout.h"
+#import "BCCollectionViewLayoutItem.h"
 
 @implementation BCCollectionView (BCCollectionView_Keyboard)
 

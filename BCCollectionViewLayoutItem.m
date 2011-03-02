@@ -1,10 +1,10 @@
 //  Created by Pieter Omvlee on 01/03/2011.
 //  Copyright 2011 Bohemian Coding. All rights reserved.
 
-#import "BCCollectionViewItemLayout.h"
+#import "BCCollectionViewLayoutItem.h"
 
-@implementation BCCollectionViewItemLayout
-@synthesize rowIndex, columnIndex, itemRect, itemIndex;
+@implementation BCCollectionViewLayoutItem
+@synthesize rowIndex, columnIndex, itemRect, itemIndex, itemContentRect;
 
 + (id)layoutItem
 {

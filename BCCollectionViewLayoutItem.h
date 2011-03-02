@@ -3,12 +3,12 @@
 
 #import <Foundation/Foundation.h>
 
-@interface BCCollectionViewItemLayout : NSObject
+@interface BCCollectionViewLayoutItem : NSObject
 {
   NSInteger rowIndex, columnIndex, itemIndex;
-  NSRect itemRect;
+  NSRect itemRect, itemContentRect;
 }
-@property NSInteger rowIndex, columnIndex, itemIndex;
-@property NSRect itemRect;
+@property (nonatomic) NSInteger rowIndex, columnIndex, itemIndex;
+@property (nonatomic) NSRect itemRect, itemContentRect;
 + (id)layoutItem;
 @end

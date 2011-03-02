@@ -4,7 +4,7 @@
 #import "BCCollectionView.h"
 #import "BCGeometryExtensions.h"
 #import "BCCollectionViewLayoutManager.h"
-#import "BCCollectionViewItemLayout.h"
+#import "BCCollectionViewLayoutItem.h"
 #import "BCCollectionViewGroup.h"
 
 @implementation BCCollectionView
@@ -43,6 +43,11 @@
   else if ([keyPath isEqual:zoomValueObserverKey]) {
     if ([self respondsToSelector:@selector(zoomValueDidChange)])
       [self performSelector:@selector(zoomValueDidChange)];
+  } else if ([keyPath isEqualToString:@"isCollapsed"]) {
+    [self performSelector:@selector(viewDidResize)];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^(void){
+      [self performSelector:@selector(scrollViewDidScroll:)];
+    });
   } else
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
@@ -55,6 +60,9 @@
   NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
   [center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
   [center removeObserver:self name:NSViewFrameDidChangeNotification object:self];
+  
+  for (BCCollectionViewGroup *group in groups)
+    [group removeObserver:self forKeyPath:@"isCollapsed"];
   
   [layoutManager release];
   [reusableViewControllers release];
@@ -179,25 +187,21 @@
 
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect
 {
-  NSUInteger firstIndex = [layoutManager indexOfItemAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
-  NSUInteger lastIndex  = [layoutManager indexOfItemAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
-  
-  if (firstIndex == NSNotFound)
-    firstIndex = 0;
-  
-  if (lastIndex == NSNotFound)
-    lastIndex = [contentArray count]-1;
-  
-  NSMutableIndexSet *indexes = [NSMutableIndexSet indexSet];
-  for (NSUInteger i=firstIndex; i<lastIndex+1; i++) {
-    if (NSIntersectsRect(aRect, [layoutManager rectOfItemAtIndex:i]))
-      [indexes addIndex:i];
-  }
-  return indexes;
+  NSArray *itemLayouts = [layoutManager itemLayouts];
+  NSIndexSet *visibleIndexes = [itemLayouts indexesOfObjectsWithOptions:NSEnumerationConcurrent passingTest:^BOOL(id itemLayout, NSUInteger idx, BOOL *stop) {
+    return NSIntersectsRect([itemLayout itemRect], aRect);
+  }];
+  return visibleIndexes;
 }
 
 - (NSIndexSet *)indexesOfItemContentRectsInRect:(NSRect)aRect
 {
+  NSArray *itemLayouts = [layoutManager itemLayouts];
+  NSIndexSet *visibleIndexes = [itemLayouts indexesOfObjectsWithOptions:NSEnumerationConcurrent passingTest:^BOOL(id itemLayout, NSUInteger idx, BOOL *stop) {
+    return NSIntersectsRect([itemLayout itemRect], aRect);
+  }];
+  return visibleIndexes;
+  
   NSUInteger firstIndex = [layoutManager indexOfItemContentRectAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
   NSUInteger lastIndex  = [layoutManager indexOfItemContentRectAtPoint:NSMakePoint(NSMaxX(aRect), NSMaxY(aRect))];
   
@@ -217,12 +221,7 @@
 
 - (NSRange)rangeOfVisibleItems
 {
-  NSArray *itemLayouts = [[layoutManager itemLayouts] copy];
-  NSRect visibleRect = [self visibleRect];
-  NSIndexSet *visibleIndexes = [itemLayouts indexesOfObjectsWithOptions:NSEnumerationConcurrent passingTest:^BOOL(id itemLayout, NSUInteger idx, BOOL *stop) {
-    return NSIntersectsRect([itemLayout itemRect], visibleRect);
-  }];
-  [itemLayouts release];
+  NSIndexSet *visibleIndexes = [self indexesOfItemsInRect:[self visibleRect]];
   return NSMakeRange([visibleIndexes firstIndex], [visibleIndexes lastIndex]-[visibleIndexes firstIndex]);
 }
 
@@ -268,20 +267,26 @@
 
 #pragma mark Swapping ViewControllers in and out
 
+- (void)removeViewControllerForItemAtIndex:(NSUInteger)anIndex
+{
+  NSNumber *key = [NSNumber numberWithInteger:anIndex];
+  NSViewController *viewController = [visibleViewControllers objectForKey:key];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [[viewController view] removeFromSuperview];
+  });
+  
+  [self delegateUpdateDeselectionForItemAtIndex:anIndex];
+  [self delegateViewControllerBecameInvisibleAtIndex:anIndex];
+  
+  [reusableViewControllers addObject:viewController];
+  [visibleViewControllers removeObjectForKey:key];
+}
+
+
 - (void)removeInvisibleViewControllers
 {
   [[self indexesOfInvisibleViewControllers] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    NSNumber *key = [NSNumber numberWithInteger:idx];
-    NSViewController *viewController = [visibleViewControllers objectForKey:key];
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [[viewController view] removeFromSuperview];
-    });
-    
-    [self delegateUpdateDeselectionForItemAtIndex:idx];
-    [self delegateViewControllerBecameInvisibleAtIndex:idx];
-        
-    [reusableViewControllers addObject:viewController];
-    [visibleViewControllers removeObjectForKey:key];
+    [self removeViewControllerForItemAtIndex:idx];
   }];
 }
 
@@ -295,49 +300,61 @@
     return [delegate reusableViewControllerForCollectionView:self];
 }
 
+- (void)addMissingViewControllerForItemAtIndex:(NSUInteger)anIndex withFrame:(NSRect)aRect
+{
+  NSViewController *viewController = [self emptyViewControllerForInsertion];
+  [visibleViewControllers setObject:viewController forKey:[NSNumber numberWithInteger:anIndex]];
+  [[viewController view] setFrame:aRect];
+  [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+  
+  id itemToLoad = [contentArray objectAtIndex:anIndex];
+  [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
+  [self addSubview:[viewController view]];
+  if ([selectionIndexes containsIndex:anIndex])
+    [self delegateUpdateSelectionForItemAtIndex:anIndex];
+}
+
+- (void)addMissingGroupHeaders
+{
+  if ([groups count] > 0) {
+    [groups enumerateObjectsUsingBlock:^(id group, NSUInteger idx, BOOL *stop) {
+      NSRect groupRect = NSMakeRect(0, NSMinY([layoutManager rectOfItemAtIndex:[group itemRange].location])-[self groupHeaderHeight],
+                                    NSWidth([self visibleRect]), [self groupHeaderHeight]);
+      BOOL groupShouldBeVisible = NSIntersectsRect(groupRect, [self visibleRect]);
+      NSViewController *groupViewController = [visibleGroupViewControllers objectForKey:[NSNumber numberWithInteger:idx]];
+      [[groupViewController view] setFrame:groupRect];
+      if (groupShouldBeVisible && !groupViewController) {
+        groupViewController = [delegate collectionView:self headerViewControllerForGroup:group];
+        [self addSubview:[groupViewController view]];
+        [visibleGroupViewControllers setObject:groupViewController forKey:[NSNumber numberWithInteger:idx]];
+      } else if (!groupShouldBeVisible && groupViewController) {
+        [[groupViewController view] removeFromSuperview];
+        [visibleGroupViewControllers removeObjectForKey:[NSNumber numberWithInteger:idx]];
+      }
+    }];
+  }
+}
+
 - (void)addMissingViewControllersToView
 {
   dispatch_async(dispatch_get_main_queue(), ^{
     [[NSIndexSet indexSetWithIndexesInRange:[self rangeOfVisibleItemsWithOverflow]] enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-      NSNumber *key = [NSNumber numberWithInteger:idx];
-      if (![visibleViewControllers objectForKey:key]) {
-        NSViewController *viewController = [self emptyViewControllerForInsertion];
-        [visibleViewControllers setObject:viewController forKey:key];
-        [[viewController view] setFrame:[layoutManager rectOfItemAtIndex:idx]];
-        [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
-        
-        id itemToLoad = [contentArray objectAtIndex:idx];
-        [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
-        [self addSubview:[viewController view]];
-        if ([selectionIndexes containsIndex:idx])
-          [self delegateUpdateSelectionForItemAtIndex:idx];
+      if (![visibleViewControllers objectForKey:[NSNumber numberWithInteger:idx]]) {
+        [self addMissingViewControllerForItemAtIndex:idx withFrame:[layoutManager rectOfItemAtIndex:idx]];
       }
     }];
     
-    if ([groups count] > 0) {
-      [groups enumerateObjectsUsingBlock:^(id group, NSUInteger idx, BOOL *stop) {
-        NSRect groupRect = NSMakeRect(0, NSMinY([layoutManager rectOfItemAtIndex:[group itemRange].location])-[self groupHeaderHeight],
-                                      NSWidth([self visibleRect]), [self groupHeaderHeight]);
-        BOOL groupShouldBeVisible = NSIntersectsRect(groupRect, [self visibleRect]);
-        NSViewController *groupViewController = [visibleGroupViewControllers objectForKey:[NSNumber numberWithInteger:idx]];
-        if (groupShouldBeVisible && !groupViewController) {
-          groupViewController = [delegate collectionView:self headerViewControllerForGroup:group];
-          [[groupViewController view] setFrame:groupRect];
-          [self addSubview:[groupViewController view]];
-          [visibleGroupViewControllers setObject:groupViewController forKey:[NSNumber numberWithInteger:idx]];
-        } else if (!groupShouldBeVisible && groupViewController) {
-          [[groupViewController view] removeFromSuperview];
-          [visibleGroupViewControllers removeObjectForKey:[NSNumber numberWithInteger:idx]];
-        }
-      }];
-    }
+    [self addMissingGroupHeaders];
   });
 }
 
 - (void)moveViewControllersToProperPosition
 {
-  for (NSNumber *number in visibleViewControllers)
-    [[[visibleViewControllers objectForKey:number] view] setFrame:[layoutManager rectOfItemAtIndex:[number integerValue]]];
+  for (NSNumber *number in visibleViewControllers) {
+    NSRect r = [layoutManager rectOfItemAtIndex:[number integerValue]];
+    if (!NSEqualRects(r, NSZeroRect))
+      [[[visibleViewControllers objectForKey:number] view] setFrame:r];
+  }
 }
 
 #pragma mark Selecting and Deselecting Items
@@ -384,12 +401,14 @@
 
 - (void)deselectItemAtIndex:(NSUInteger)index
 {
-  [selectionIndexes removeIndex:index];
-  if ([self shoulDrawSelections])
-    [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
-  
-  [self delegateDidDeselectItemAtIndex:index];
-  [self delegateUpdateDeselectionForItemAtIndex:index];
+  if (index < [contentArray count]) {
+    [selectionIndexes removeIndex:index];
+    if ([self shoulDrawSelections])
+      [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
+    
+    [self delegateDidDeselectItemAtIndex:index];
+    [self delegateUpdateDeselectionForItemAtIndex:index];
+  }
 }
 
 - (void)deselectItemsAtIndexes:(NSIndexSet *)indexes
@@ -458,7 +477,9 @@
 - (void)resizeFrameToFitContents
 {
   NSRect frame = [self frame];
-  frame.size.height = MAX([self visibleRect].size.height, NSMaxY([layoutManager rectOfItemAtIndex:[contentArray count]-1]));
+  frame.size.height = [self visibleRect].size.height;
+  if ([contentArray count] > 0)
+    frame.size.height = MAX(frame.size.height, NSMaxY([layoutManager rectOfItemAtIndex:[contentArray count]-1]));
   [self setFrame:frame];
 }
 
@@ -474,9 +495,15 @@
   if (!delegate)
     return;
   
+  for (BCCollectionViewGroup *group in groups)
+    [group removeObserver:self forKeyPath:@"isCollapsed"];
+  for (BCCollectionViewGroup *group in newGroups)
+    [group addObserver:self forKeyPath:@"isCollapsed" options:0 context:NULL];
+  
   self.groups       = newGroups;
   self.contentArray = newContent;
-  [layoutManager reloadWithCompletionBlock:^{
+  
+  [layoutManager enumerateItems:NULL completionBlock:^{
     [self resizeFrameToFitContents];
     
     if (shouldEmptyCaches) {
@@ -521,12 +548,23 @@
 
 - (void)viewDidResize
 {
-  [layoutManager reloadWithCompletionBlock:^{
+  NSRect visibleRect = [self visibleRect];
+  [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
+    BOOL shouldBeVisible = NSIntersectsRect([layoutItem itemRect], visibleRect);
+    if (shouldBeVisible) {
+      NSViewController *controller = [self viewControllerForItemAtIndex:[layoutItem itemIndex]];
+      if (controller)
+        [[controller view] setFrame:[layoutItem itemRect]];
+      else {
+        [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
+      }
+    } else {
+      if ([self viewControllerForItemAtIndex:[layoutItem itemIndex]])
+        [self removeViewControllerForItemAtIndex:[layoutItem itemIndex]];
+    }
+  } completionBlock:^(void) {
     [self resizeFrameToFitContents];
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self moveViewControllersToProperPosition];
-      [self addMissingViewControllersToView];
-    });
+    [self addMissingGroupHeaders];
   }];
 }
 

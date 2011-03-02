@@ -2,6 +2,7 @@
 //  Copyright 2011 Bohemian Coding. All rights reserved.
 
 #import <Foundation/Foundation.h>
+#import "BCCollectionViewLayoutOperation.h"
 
 @class BCCollectionView;
 @interface BCCollectionViewLayoutManager : NSObject
@@ -9,15 +10,13 @@
   BCCollectionView *collectionView;
   NSOperationQueue *queue;
   
-  NSMutableArray *itemLayouts;
-  NSInteger numberOfRows;  
+  NSArray *itemLayouts;
 }
-@property (readonly) NSArray *itemLayouts;
+@property (retain) NSArray *itemLayouts;
 - (id)initWithCollectionView:(BCCollectionView *)collectionView; //assigned
-- (void)reloadWithCompletionBlock:(dispatch_block_t)completionBlock;
+- (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock;
 
 #pragma mark Primitives
-- (NSUInteger)numberOfRows;
 - (NSUInteger)maximumNumberOfItemsPerRow;
 - (NSSize)cellSize;
 

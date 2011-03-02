@@ -4,7 +4,7 @@
 #import "BCCollectionViewLayoutManager.h"
 #import "BCCollectionView.h"
 #import "BCCollectionViewGroup.h"
-#import "BCCollectionViewItemLayout.h"
+#import "BCCollectionViewLayoutItem.h"
 
 @implementation BCCollectionViewLayoutManager
 @synthesize itemLayouts;
@@ -14,66 +14,21 @@
   self = [super init];
   if (self) {
     collectionView = aCollectionView;
-    itemLayouts    = [[NSMutableArray alloc] init];
-    numberOfRows   = -1;
     queue          = [[NSOperationQueue alloc] init];
     [queue setMaxConcurrentOperationCount:1];
-    
   }
   return self;
 }
 
-- (void)reloadWithCompletionBlock:(dispatch_block_t)completionBlock
+- (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock
 {
-  numberOfRows = 0;
   [queue cancelAllOperations];
-  [queue addOperationWithBlock:^{
-    [itemLayouts removeAllObjects];
-    NSInteger x = 0;
-    NSInteger y = 0;
-    NSUInteger colIndex = 0;
-    
-    NSEnumerator *groupEnum = [[collectionView groups] objectEnumerator];
-    BCCollectionViewGroup *group = [groupEnum nextObject];
-    NSSize cellSize = [self cellSize];
-    NSUInteger count = [[collectionView contentArray] count];
-    for (NSInteger i=0; i<count; i++) {
-      if (group && [group itemRange].location == i) {
-        if (x != 0) {
-          numberOfRows++;
-          colIndex = 0;
-          y += cellSize.height;
-        }
-        y += [collectionView groupHeaderHeight];
-        x = 0;
-      }
-      BCCollectionViewItemLayout *item = [BCCollectionViewItemLayout layoutItem];
-      [item setItemIndex:i];
-      if (![group isCollapsed]) {
-        if (x + cellSize.width > NSMaxX([collectionView visibleRect])) {
-          numberOfRows++;
-          colIndex = 0;
-          y += cellSize.height;
-          x  = 0;
-        }
-        [item setColumnIndex:colIndex];
-        [item setItemRect:NSMakeRect(x, y, cellSize.width, cellSize.height)];
-        x += cellSize.width;
-        colIndex++;
-      } else {
-        [item setItemRect:NSMakeRect(x, y, 0, 0)];
-      }
-      [item setRowIndex:numberOfRows];
-      [itemLayouts addObject:item];
-      
-      if ([group itemRange].location + [group itemRange].length-1 == i)
-        group = [groupEnum nextObject];
-    }
-    numberOfRows = MAX(numberOfRows, [[collectionView groups] count]);
-    if ([[collectionView contentArray] count] > 0 && numberOfRows == -1)
-      numberOfRows = 1;
-    dispatch_async(dispatch_get_main_queue(), completionBlock);
-  }];
+  
+  BCCollectionViewLayoutOperation *operation = [[BCCollectionViewLayoutOperation alloc] init];
+  [operation setCollectionView:collectionView];
+  [operation setLayoutCallBack:itemIterator];
+  [operation setCompletionBlock:completionBlock];
+  [queue addOperation:[operation autorelease]];
 }
 
 - (void)dealloc
@@ -85,11 +40,6 @@
 
 #pragma mark -
 #pragma mark Primitives
-
-- (NSUInteger)numberOfRows
-{
-  return numberOfRows;
-}
 
 - (NSUInteger)maximumNumberOfItemsPerRow
 {
@@ -106,7 +56,7 @@
 
 - (NSPoint)rowAndColumnPositionOfItemAtIndex:(NSUInteger)anIndex
 {
-  BCCollectionViewItemLayout *itemLayout = [itemLayouts objectAtIndex:anIndex];
+  BCCollectionViewLayoutItem *itemLayout = [itemLayouts objectAtIndex:anIndex];
   return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
 }
 
@@ -154,16 +104,14 @@
   if (anIndex < [itemLayouts count])
     return [[itemLayouts objectAtIndex:anIndex] itemRect];
   else
-    return NSMakeRect(0, 0, [self cellSize].width, [self cellSize].height);
+    return NSZeroRect;
 }
 
 - (NSRect)contentRectOfItemAtIndex:(NSUInteger)anIndex
 {
-  NSRect rect = [self rectOfItemAtIndex:anIndex];
-  if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)]) {
-    NSSize inset = [[collectionView delegate] insetMarginForSelectingItemsInCollectionView:collectionView];
-    return NSInsetRect(rect, inset.width, inset.height);
-  } else
-    return rect;
+  if (anIndex < [itemLayouts count])
+    return [[itemLayouts objectAtIndex:anIndex] itemContentRect];
+  else
+    return NSZeroRect;
 }
 @end
