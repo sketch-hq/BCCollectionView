@@ -4,24 +4,26 @@
 #import "BCCollectionView.h"
 #import "BCGeometryExtensions.h"
 #import "BCCollectionViewLayoutManager.h"
+#import "BCCollectionViewItemLayout.h"
 #import "BCCollectionViewGroup.h"
 
 @implementation BCCollectionView
-@synthesize delegate, contentArray, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows, layoutManager;
+@synthesize delegate, contentArray, groups, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows, layoutManager;
 @dynamic visibleViewControllerArray;
 
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
   self = [super initWithCoder:aDecoder];
   if (self) {
-    reusableViewControllers = [[NSMutableArray alloc] init];
-    visibleViewControllers  = [[NSMutableDictionary alloc] init];
-    contentArray            = [[NSArray alloc] init];
-    selectionIndexes        = [[NSMutableIndexSet alloc] init];
-    dragHoverIndex          = NSNotFound;
-    accumulatedKeyStrokes   = [[NSString alloc] init];
-    numberOfPreRenderedRows = 3;
-    layoutManager           = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
+    reusableViewControllers     = [[NSMutableArray alloc] init];
+    visibleViewControllers      = [[NSMutableDictionary alloc] init];
+    contentArray                = [[NSArray alloc] init];
+    selectionIndexes            = [[NSMutableIndexSet alloc] init];
+    dragHoverIndex              = NSNotFound;
+    accumulatedKeyStrokes       = [[NSString alloc] init];
+    numberOfPreRenderedRows     = 3;
+    layoutManager               = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
+    visibleGroupViewControllers = [[NSMutableDictionary alloc] init];
     
     [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
     
@@ -57,7 +59,9 @@
   [layoutManager release];
   [reusableViewControllers release];
   [visibleViewControllers release];
+  [visibleGroupViewControllers release];
   [contentArray release];
+  [groups release];
   [selectionIndexes release];
   [originalSelectionIndexes release];
   [accumulatedKeyStrokes release];
@@ -113,14 +117,6 @@
   
   if (dragHoverIndex != NSNotFound && [self shoulDrawHover])
     [self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:[NSNumber numberWithInteger:dragHoverIndex]] view] frame]];
-  
-  if ([delegate respondsToSelector:@selector(collectionView:drawGroupSeparator:inRect:)]) {
-    NSRect groupRect = NSMakeRect(0, 0, NSWidth([self visibleRect]), BCCollectionViewGroupHeight);
-    for (BCCollectionViewGroup *group in [layoutManager groups]) {
-      groupRect.origin.y = [layoutManager rectOfItemAtIndex:[group itemRange].location].origin.y-BCCollectionViewGroupHeight;
-      [delegate collectionView:self drawGroupSeparator:group inRect:groupRect];
-    }
-  }
 }
 
 #pragma mark Delegate Call Wrappers
@@ -176,6 +172,11 @@
   return [delegate cellSizeForCollectionView:self];
 }
 
+- (NSUInteger)groupHeaderHeight
+{
+  return [delegate groupHeaderHeightForCollectionView:self];
+}
+
 - (NSIndexSet *)indexesOfItemsInRect:(NSRect)aRect
 {
   NSUInteger firstIndex = [layoutManager indexOfItemAtPoint:NSMakePoint(NSMinX(aRect), NSMinY(aRect))];
@@ -216,32 +217,19 @@
 
 - (NSRange)rangeOfVisibleItems
 {
+  NSArray *itemLayouts = [[layoutManager itemLayouts] copy];
   NSRect visibleRect = [self visibleRect];
-  NSInteger numberOfRows = [layoutManager numberOfRows];
-  NSInteger indexOfFirstItemAtRow = 0;
-  NSInteger firstIndex = NSNotFound;
-  NSInteger lastIndex  = NSNotFound;
-  
-  for (NSInteger i=0; i<numberOfRows; i++) {
-    NSRect r = [layoutManager rectOfItemAtIndex:indexOfFirstItemAtRow];
-    BOOL rowIsVisible = NSIntersectionRange(NSMakeRange(r.origin.y, r.size.height), NSMakeRange(visibleRect.origin.y, visibleRect.size.height)).length != 0;
-    
-    if (firstIndex == NSNotFound && rowIsVisible)
-      firstIndex = indexOfFirstItemAtRow;
-    if (firstIndex != NSNotFound && !rowIsVisible)
-      lastIndex = indexOfFirstItemAtRow-1;
-    if (firstIndex != NSNotFound && lastIndex != NSNotFound)
-      return NSMakeRange(firstIndex, lastIndex-firstIndex);
-    
-    indexOfFirstItemAtRow += [layoutManager numberOfItemsAtRow:i];
-  }
-  return NSMakeRange(firstIndex, lastIndex-firstIndex);
+  NSIndexSet *visibleIndexes = [itemLayouts indexesOfObjectsWithOptions:NSEnumerationConcurrent passingTest:^BOOL(id itemLayout, NSUInteger idx, BOOL *stop) {
+    return NSIntersectsRect([itemLayout itemRect], visibleRect);
+  }];
+  [itemLayouts release];
+  return NSMakeRange([visibleIndexes firstIndex], [visibleIndexes lastIndex]-[visibleIndexes firstIndex]);
 }
 
 - (NSRange)rangeOfVisibleItemsWithOverflow
 {
   NSRange range = [self rangeOfVisibleItems];
-  NSInteger extraItems = [layoutManager numberOfItemsAtRow:0] * numberOfPreRenderedRows;
+  NSInteger extraItems = [layoutManager maximumNumberOfItemsPerRow] * numberOfPreRenderedRows;
   NSInteger min = range.location;
   NSInteger max = range.location + range.length;
   
@@ -325,6 +313,24 @@
           [self delegateUpdateSelectionForItemAtIndex:idx];
       }
     }];
+    
+    if ([groups count] > 0) {
+      [groups enumerateObjectsUsingBlock:^(id group, NSUInteger idx, BOOL *stop) {
+        NSRect groupRect = NSMakeRect(0, NSMinY([layoutManager rectOfItemAtIndex:[group itemRange].location])-[self groupHeaderHeight],
+                                      NSWidth([self visibleRect]), [self groupHeaderHeight]);
+        BOOL groupShouldBeVisible = NSIntersectsRect(groupRect, [self visibleRect]);
+        NSViewController *groupViewController = [visibleGroupViewControllers objectForKey:[NSNumber numberWithInteger:idx]];
+        if (groupShouldBeVisible && !groupViewController) {
+          groupViewController = [delegate collectionView:self headerViewControllerForGroup:group];
+          [[groupViewController view] setFrame:groupRect];
+          [self addSubview:[groupViewController view]];
+          [visibleGroupViewControllers setObject:groupViewController forKey:[NSNumber numberWithInteger:idx]];
+        } else if (!groupShouldBeVisible && groupViewController) {
+          [[groupViewController view] removeFromSuperview];
+          [visibleGroupViewControllers removeObjectForKey:[NSNumber numberWithInteger:idx]];
+        }
+      }];
+    }
   });
 }
 
@@ -458,11 +464,17 @@
 
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches
 {
+  [self reloadDataWithItems:newContent groups:nil emptyCaches:shouldEmptyCaches];
+}
+
+- (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches
+{
   [self deselectAllItems];
   
   if (!delegate)
     return;
   
+  self.groups       = newGroups;
   self.contentArray = newContent;
   [layoutManager reloadWithCompletionBlock:^{
     [self resizeFrameToFitContents];
@@ -474,8 +486,12 @@
           [delegate collectionView:self viewControllerBecameInvisible:viewController];
       }
       
+      for (NSViewController *viewController in [visibleGroupViewControllers allValues])
+        [[viewController view] removeFromSuperview];
+      
       [reusableViewControllers removeAllObjects];
       [visibleViewControllers removeAllObjects];
+      [visibleGroupViewControllers removeAllObjects];
     } else
       [self softReloadVisibleViewControllers];
     

@@ -2,12 +2,12 @@
 //  Copyright 2011 Bohemian Coding. All rights reserved.
 
 #import "BCCollectionViewLayoutManager.h"
-#import "BCCollectionViewItemLayout.h"
-#import "BCCollectionViewGroup.h"
 #import "BCCollectionView.h"
+#import "BCCollectionViewGroup.h"
+#import "BCCollectionViewItemLayout.h"
 
 @implementation BCCollectionViewLayoutManager
-@synthesize groups;
+@synthesize itemLayouts;
 
 - (id)initWithCollectionView:(BCCollectionView *)aCollectionView
 {
@@ -25,14 +25,15 @@
 
 - (void)reloadWithCompletionBlock:(dispatch_block_t)completionBlock
 {
-  numberOfRows = -1;
+  numberOfRows = 0;
   [queue cancelAllOperations];
   [queue addOperationWithBlock:^{
     [itemLayouts removeAllObjects];
     NSInteger x = 0;
     NSInteger y = 0;
+    NSUInteger colIndex = 0;
     
-    NSEnumerator *groupEnum = [groups objectEnumerator];
+    NSEnumerator *groupEnum = [[collectionView groups] objectEnumerator];
     BCCollectionViewGroup *group = [groupEnum nextObject];
     NSSize cellSize = [self cellSize];
     NSUInteger count = [[collectionView contentArray] count];
@@ -40,30 +41,37 @@
       if (group && [group itemRange].location == i) {
         if (x != 0) {
           numberOfRows++;
+          colIndex = 0;
           y += cellSize.height;
         }
-        y += BCCollectionViewGroupHeight;
+        y += [collectionView groupHeaderHeight];
         x = 0;
       }
       BCCollectionViewItemLayout *item = [BCCollectionViewItemLayout layoutItem];
       [item setItemIndex:i];
-      [item setRowIndex:numberOfRows];
       if (![group isCollapsed]) {
         if (x + cellSize.width > NSMaxX([collectionView visibleRect])) {
           numberOfRows++;
+          colIndex = 0;
           y += cellSize.height;
           x  = 0;
         }
+        [item setColumnIndex:colIndex];
         [item setItemRect:NSMakeRect(x, y, cellSize.width, cellSize.height)];
         x += cellSize.width;
+        colIndex++;
       } else {
         [item setItemRect:NSMakeRect(x, y, 0, 0)];
       }
+      [item setRowIndex:numberOfRows];
       [itemLayouts addObject:item];
       
-      if ([group itemRange].location + [group itemRange].length == i)
+      if ([group itemRange].location + [group itemRange].length-1 == i)
         group = [groupEnum nextObject];
     }
+    numberOfRows = MAX(numberOfRows, [[collectionView groups] count]);
+    if ([[collectionView contentArray] count] > 0 && numberOfRows == -1)
+      numberOfRows = 1;
     dispatch_async(dispatch_get_main_queue(), completionBlock);
   }];
 }
@@ -71,7 +79,6 @@
 - (void)dealloc
 {
   [itemLayouts release];
-  [groups release];
   [queue release];
   [super dealloc];
 }
@@ -84,7 +91,7 @@
   return numberOfRows;
 }
 
-- (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex
+- (NSUInteger)maximumNumberOfItemsPerRow
 {
   return MAX(1, [collectionView frame].size.width/[self cellSize].width);
 }
@@ -92,6 +99,27 @@
 - (NSSize)cellSize
 {
   return [collectionView cellSize];
+}
+
+#pragma mark -
+#pragma mark Rows and Columns
+
+- (NSPoint)rowAndColumnPositionOfItemAtIndex:(NSUInteger)anIndex
+{
+  BCCollectionViewItemLayout *itemLayout = [itemLayouts objectAtIndex:anIndex];
+  return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
+}
+
+- (NSUInteger)indexOfItemAtRow:(NSUInteger)rowIndex column:(NSUInteger)colIndex
+{
+  __block NSUInteger index = NSNotFound;
+  [itemLayouts enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(id item, NSUInteger idx, BOOL *stop) {
+    if ([item rowIndex] == rowIndex && [item columnIndex] == colIndex) {
+      index = [item itemIndex];
+      *stop = YES;
+    }
+  }];
+  return index;
 }
 
 #pragma mark -

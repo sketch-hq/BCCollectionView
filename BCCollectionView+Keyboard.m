@@ -3,6 +3,7 @@
 
 #import "BCCollectionView+Keyboard.h"
 #import "BCCollectionViewLayoutManager.h"
+#import "BCCollectionViewItemLayout.h"
 
 @implementation BCCollectionView (BCCollectionView_Keyboard)
 
@@ -42,108 +43,98 @@
   }
 }
 
-- (void)moveLeft:(id)sender
+#pragma mark Helper Methods
+
+- (void)simpleSelectItemAtIndex:(NSUInteger)anIndex
 {
-  NSUInteger index = lastSelectionIndex;
-  
-  if (index % [layoutManager numberOfItemsAtRow:index] != 0) {
+  if (anIndex != NSNotFound) {
     [self deselectAllItems];
-    NSUInteger newIndex = index-1;
-    [self selectItemAtIndex:newIndex];
+    [self selectItemAtIndex:anIndex];
+    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:anIndex]];
+  }
+}
+
+- (void)simpleExtendSelectionRange:(NSRange)range newIndex:(NSUInteger)newIndex
+{
+  if (newIndex != NSNotFound) {
+    if ([selectionIndexes containsIndex:newIndex])
+      [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
+    else
+      [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
+    lastSelectionIndex = newIndex;
     [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
   }
+}
+
+#pragma mark Arrow Keys
+
+- (void)moveLeft:(id)sender
+{
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y column:position.x-1]];
 }
 
 - (void)moveLeftAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex % [layoutManager numberOfItemsAtRow:lastSelectionIndex] != 0) {
-    NSUInteger index = lastSelectionIndex-1;
-    if ([selectionIndexes containsIndex:index])
-      [self deselectItemAtIndex:lastSelectionIndex];
-    else
-      [self selectItemAtIndex:index];
-    lastSelectionIndex = index;
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:index]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x-1];
+  [self simpleExtendSelectionRange:NSMakeRange(newIndex, lastSelectionIndex-newIndex) newIndex:newIndex];
 }
 
 - (void)moveRight:(id)sender
 {
-  NSUInteger index = lastSelectionIndex;
-  if (index % [layoutManager numberOfItemsAtRow:index] != [layoutManager numberOfItemsAtRow:index]-1) {
-    [self deselectAllItems];
-    NSUInteger newIndex = index+1;
-    [self selectItemAtIndex:newIndex];
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y column:position.x+1]];
 }
 
 - (void)moveRightAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex % [layoutManager numberOfItemsAtRow:lastSelectionIndex] != [layoutManager numberOfItemsAtRow:lastSelectionIndex]-1) {
-    NSUInteger index = lastSelectionIndex+1;
-    if ([selectionIndexes containsIndex:index])
-      [self deselectItemAtIndex:lastSelectionIndex];
-    else
-      [self selectItemAtIndex:index];
-    lastSelectionIndex = index;
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:index]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x+1];
+  [self simpleExtendSelectionRange:NSMakeRange(lastSelectionIndex, newIndex-lastSelectionIndex+1) newIndex:newIndex];
 }
 
 - (void)moveUp:(id)sender
 {
-  NSUInteger index = lastSelectionIndex;
-  if (index > [layoutManager numberOfItemsAtRow:index]-1) {
-    [self deselectAllItems];
-    NSUInteger newIndex = index-[layoutManager numberOfItemsAtRow:index];
-    [self selectItemAtIndex:newIndex];
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y-1 column:position.x]];
 }
 
 - (void)moveUpAndModifySelection:(id)sender
 {
-  if (lastSelectionIndex > [layoutManager numberOfItemsAtRow:lastSelectionIndex]-1) {
-    NSUInteger index = lastSelectionIndex - [layoutManager numberOfItemsAtRow:lastSelectionIndex];
-    NSRange range    = NSMakeRange(index, [layoutManager numberOfItemsAtRow:lastSelectionIndex]);
-    if ([selectionIndexes containsIndex:index]) {
-      range.location++;
-      [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
-    } else
-      [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
-    lastSelectionIndex = index;
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:index]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y-1 column:position.x];
+  if (newIndex == NSNotFound)
+    newIndex = 0;
+  
+  NSRange range = NSMakeRange(newIndex, lastSelectionIndex-newIndex);
+  if ([selectionIndexes containsIndex:newIndex])
+    range.location++;
+  
+  [self simpleExtendSelectionRange:range newIndex:newIndex];
 }
 
 - (void)moveDown:(id)sender
 {
-  NSUInteger index = lastSelectionIndex;
-  if (index + [layoutManager numberOfItemsAtRow:index] < [contentArray count]) {
-    [self deselectAllItems];
-    NSUInteger newIndex = index + [layoutManager numberOfItemsAtRow:index];
-    [self selectItemAtIndex:newIndex];
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:newIndex]];
-  }
+  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y+1 column:position.x]];
 }
 
 - (void)moveDownAndModifySelection:(id)sender
 {
-  NSUInteger index = lastSelectionIndex;
-  if (index + [layoutManager numberOfItemsAtRow:index] < [contentArray count]) {
-    NSUInteger index = lastSelectionIndex + [layoutManager numberOfItemsAtRow:index];
-    NSRange range    = NSMakeRange(lastSelectionIndex, [layoutManager numberOfItemsAtRow:index]);
-    if ([selectionIndexes containsIndex:index])
-      [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
-    else {
-      range.length++;
-      [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
-    }
-    lastSelectionIndex = index;
-    [self scrollRectToVisible:[layoutManager rectOfItemAtIndex:index]];
-  }
+  NSPoint position    = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
+  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y+1 column:position.x];
+  if (newIndex == NSNotFound)
+    newIndex = [contentArray count]-1;
+  
+  NSRange range = NSMakeRange(lastSelectionIndex, newIndex-lastSelectionIndex);
+  if (![selectionIndexes containsIndex:newIndex])
+    range.length++;
+  
+  [self simpleExtendSelectionRange:range newIndex:newIndex];
 }
+
+#pragma mark Deleting
 
 - (void)deleteBackward:(id)sender
 {

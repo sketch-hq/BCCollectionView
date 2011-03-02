@@ -11,10 +11,12 @@
   BCCollectionViewLayoutManager *layoutManager;
   
   NSArray *contentArray;
+  NSArray *groups;
   
   NSMutableArray      *reusableViewControllers;
   NSMutableDictionary *visibleViewControllers;
   NSMutableIndexSet   *selectionIndexes;
+  NSMutableDictionary *visibleGroupViewControllers;
   
   NSColor *backgroundColor;
   NSUInteger  numberOfPreRenderedRows;
@@ -42,7 +44,7 @@
 
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
-@property (nonatomic, copy) NSArray *contentArray;
+@property (nonatomic, copy) NSArray *contentArray, *groups;
 @property (nonatomic, copy) NSString *zoomValueObserverKey, *accumulatedKeyStrokes;
 
 @property (readonly) NSArray *visibleViewControllerArray;
@@ -50,6 +52,7 @@
 
 //designated way to load BCCollectionView
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
+- (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches;
 
 //Managing Selections
 - (void)selectItemAtIndex:(NSUInteger)index;
@@ -63,6 +66,7 @@
 
 //Basic Cell Information
 - (NSSize)cellSize;
+- (NSUInteger)groupHeaderHeight;
 - (NSRange)rangeOfVisibleItems;
 - (NSRange)rangeOfVisibleItemsWithOverflow;
 

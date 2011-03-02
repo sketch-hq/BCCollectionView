@@ -11,4 +11,9 @@
   return [[[self alloc] init] autorelease];
 }
 
+- (NSString *)description
+{
+  return [NSString stringWithFormat:@"i:%i r:%i c:%i", (int)itemIndex, (int)rowIndex, (int)columnIndex];
+}
+
 @end

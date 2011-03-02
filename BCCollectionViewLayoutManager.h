@@ -7,20 +7,23 @@
 @interface BCCollectionViewLayoutManager : NSObject
 {
   BCCollectionView *collectionView;
-  NSInteger numberOfRows;
-  NSArray *groups;
-  NSMutableArray *itemLayouts;
-  
   NSOperationQueue *queue;
+  
+  NSMutableArray *itemLayouts;
+  NSInteger numberOfRows;  
 }
-@property (copy) NSArray *groups;
+@property (readonly) NSArray *itemLayouts;
 - (id)initWithCollectionView:(BCCollectionView *)collectionView; //assigned
 - (void)reloadWithCompletionBlock:(dispatch_block_t)completionBlock;
 
 #pragma mark Primitives
 - (NSUInteger)numberOfRows;
-- (NSUInteger)numberOfItemsAtRow:(NSInteger)rowIndex;
+- (NSUInteger)maximumNumberOfItemsPerRow;
 - (NSSize)cellSize;
+
+#pragma mark Rows and Columns
+- (NSUInteger)indexOfItemAtRow:(NSUInteger)rowIndex column:(NSUInteger)colIndex;
+- (NSPoint)rowAndColumnPositionOfItemAtIndex:(NSUInteger)anIndex;
 
 #pragma mark From Point to Index
 - (NSUInteger)indexOfItemAtPoint:(NSPoint)p;

@@ -44,7 +44,9 @@ enum {
 - (BOOL)collectionViewShouldDrawSelections:(BCCollectionView *)collectionView;
 - (BOOL)collectionViewShouldDrawHover:(BCCollectionView *)collectionView;
 
-- (void)collectionView:(BCCollectionView *)collectionView drawGroupSeparator:(BCCollectionViewGroup *)group inRect:(NSRect)rect;
+//working with groups
+- (NSUInteger)groupHeaderHeightForCollectionView:(BCCollectionView *)collectionView;
+- (id)collectionView:(BCCollectionView *)collectionView headerViewControllerForGroup:(BCCollectionViewGroup *)group;
 
 //managing Drag & Drop (in order of occurence)
 - (BOOL)collectionView:(BCCollectionView *)collectionView canDragItemsAtIndexes:(NSIndexSet *)indexSet;

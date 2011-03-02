@@ -3,8 +3,6 @@
 
 #import <Foundation/Foundation.h>
 
-#define BCCollectionViewGroupHeight 30
-
 @interface BCCollectionViewGroup : NSObject
 {
   NSString *title;
