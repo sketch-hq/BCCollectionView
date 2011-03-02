@@ -34,6 +34,13 @@ Note. Do not use the following methods to style viewControllers. They are intend
 	- (void)iconView:(BCCollectionView *)iconView didSelectItem:(id)anItem withViewController:(NSViewController *)viewController;
 	- (void)iconView:(BCCollectionView *)iconView didDeselectItem:(id)anItem withViewController:(NSViewController *)viewController;
 
+# Groups
+
+The latest addition to BCCollectionView has to with groups. Just like IKImageBrowserView, we can now divide the items into groups. A group is simply a range with a title, and the delegate can supply a custom NSViewController to represent the header.
+Groups can be set using the default way to load the BCCollectionView:
+
+	- (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches;
+
 # License
 
 BCCollectionView is licensed under the BSD license
