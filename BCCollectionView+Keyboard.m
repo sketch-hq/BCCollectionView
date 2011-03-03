@@ -58,7 +58,7 @@
 {
   if (newIndex != NSNotFound) {
     if ([selectionIndexes containsIndex:newIndex])
-      [self deselectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
+      [self deselectItemsAtIndexes:[[NSIndexSet indexSetWithIndexesInRange:range] indexSetByRemovingIndex:newIndex]];
     else
       [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:range]];
     lastSelectionIndex = newIndex;
@@ -78,7 +78,7 @@
 {
   NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
   NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x-1];
-  [self simpleExtendSelectionRange:NSMakeRange(newIndex, lastSelectionIndex-newIndex) newIndex:newIndex];
+  [self simpleExtendSelectionRange:NSMakeRange(newIndex, 2) newIndex:newIndex];
 }
 
 - (void)moveRight:(id)sender
@@ -91,7 +91,7 @@
 {
   NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
   NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x+1];
-  [self simpleExtendSelectionRange:NSMakeRange(lastSelectionIndex, newIndex-lastSelectionIndex+1) newIndex:newIndex];
+  [self simpleExtendSelectionRange:NSMakeRange(lastSelectionIndex, 2) newIndex:newIndex];
 }
 
 - (void)moveUp:(id)sender
@@ -147,4 +147,13 @@
   [self deleteBackward:sender];
 }
 
+@end
+
+@implementation NSIndexSet (BCCollectionView_IndexSet)
+- (NSIndexSet *)indexSetByRemovingIndex:(NSUInteger)index
+{
+  return [self indexesPassingTest:^BOOL(NSUInteger idx, BOOL *stop) {
+    return index != idx;
+  }];
+}
 @end

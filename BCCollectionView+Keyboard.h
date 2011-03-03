@@ -18,3 +18,7 @@
 - (void)moveDown:(id)sender;
 - (void)moveDownAndModifySelection:(id)sender;
 @end
+
+@interface NSIndexSet (BCCollectionView_IndexSet)
+- (NSIndexSet *)indexSetByRemovingIndex:(NSUInteger)index;
+@end

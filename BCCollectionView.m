@@ -271,9 +271,7 @@
 {
   NSNumber *key = [NSNumber numberWithInteger:anIndex];
   NSViewController *viewController = [visibleViewControllers objectForKey:key];
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [[viewController view] removeFromSuperview];
-  });
+  [[viewController view] removeFromSuperview];
   
   [self delegateUpdateDeselectionForItemAtIndex:anIndex];
   [self delegateViewControllerBecameInvisibleAtIndex:anIndex];
@@ -553,11 +551,12 @@
     BOOL shouldBeVisible = NSIntersectsRect([layoutItem itemRect], visibleRect);
     if (shouldBeVisible) {
       NSViewController *controller = [self viewControllerForItemAtIndex:[layoutItem itemIndex]];
+//      if (controller  && ![[controller view] superview])
+//        NSLog(@"nooooo");
       if (controller)
         [[controller view] setFrame:[layoutItem itemRect]];
-      else {
+      else
         [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
-      }
     } else {
       if ([self viewControllerForItemAtIndex:[layoutItem itemIndex]])
         [self removeViewControllerForItemAtIndex:[layoutItem itemIndex]];
