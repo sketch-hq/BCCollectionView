@@ -27,7 +27,7 @@
   BCCollectionViewLayoutOperation *operation = [[BCCollectionViewLayoutOperation alloc] init];
   [operation setCollectionView:collectionView];
   [operation setLayoutCallBack:itemIterator];
-  [operation setCompletionBlock:completionBlock];
+  [operation setLayoutCompletionBlock:completionBlock];
   [queue addOperation:[operation autorelease]];
 }
 

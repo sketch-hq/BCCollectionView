@@ -44,7 +44,7 @@
     if ([self respondsToSelector:@selector(zoomValueDidChange)])
       [self performSelector:@selector(zoomValueDidChange)];
   } else if ([keyPath isEqualToString:@"isCollapsed"]) {
-    [self performSelector:@selector(viewDidResize)];
+    [self softReloadData];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^(void){
       [self performSelector:@selector(scrollViewDidScroll:)];
     });
@@ -476,8 +476,10 @@
 {
   NSRect frame = [self frame];
   frame.size.height = [self visibleRect].size.height;
-  if ([contentArray count] > 0)
-    frame.size.height = MAX(frame.size.height, NSMaxY([layoutManager rectOfItemAtIndex:[contentArray count]-1]));
+  if ([contentArray count] > 0) {
+    BCCollectionViewLayoutItem *layoutItem = [[layoutManager itemLayouts] lastObject];
+    frame.size.height = MAX(frame.size.height, NSMaxY([layoutItem itemRect]));
+  }
   [self setFrame:frame];
 }
 
@@ -501,30 +503,29 @@
   self.groups       = newGroups;
   self.contentArray = newContent;
   
-  [layoutManager enumerateItems:NULL completionBlock:^{
+  if (shouldEmptyCaches) {
+    for (NSViewController *viewController in [visibleViewControllers allValues]) {
+      [[viewController view] removeFromSuperview];
+      if ([delegate respondsToSelector:@selector(collectionView:viewControllerBecameInvisible:)])
+        [delegate collectionView:self viewControllerBecameInvisible:viewController];
+    }
+    
+    for (NSViewController *viewController in [visibleGroupViewControllers allValues])
+      [[viewController view] removeFromSuperview];
+    
+    [reusableViewControllers removeAllObjects];
+    [visibleViewControllers removeAllObjects];
+    [visibleGroupViewControllers removeAllObjects];
+  } else
+    [self softReloadVisibleViewControllers];
+  
+  [selectionIndexes removeAllIndexes];
+  
+  [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
+    [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
+  } completionBlock:^{
+    NSLog(@"reload done (content count: %i)", (int)[contentArray count]);
     [self resizeFrameToFitContents];
-    
-    if (shouldEmptyCaches) {
-      for (NSViewController *viewController in [visibleViewControllers allValues]) {
-        [[viewController view] removeFromSuperview];
-        if ([delegate respondsToSelector:@selector(collectionView:viewControllerBecameInvisible:)])
-          [delegate collectionView:self viewControllerBecameInvisible:viewController];
-      }
-      
-      for (NSViewController *viewController in [visibleGroupViewControllers allValues])
-        [[viewController view] removeFromSuperview];
-      
-      [reusableViewControllers removeAllObjects];
-      [visibleViewControllers removeAllObjects];
-      [visibleGroupViewControllers removeAllObjects];
-    } else
-      [self softReloadVisibleViewControllers];
-    
-    [selectionIndexes removeAllIndexes];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self addMissingViewControllersToView];
-    });
   }];
 }
 
@@ -546,13 +547,17 @@
 
 - (void)viewDidResize
 {
+  if ([contentArray count] > 0)
+    [self softReloadData];
+}
+
+- (void)softReloadData
+{
   NSRect visibleRect = [self visibleRect];
   [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
     BOOL shouldBeVisible = NSIntersectsRect([layoutItem itemRect], visibleRect);
     if (shouldBeVisible) {
       NSViewController *controller = [self viewControllerForItemAtIndex:[layoutItem itemIndex]];
-//      if (controller  && ![[controller view] superview])
-//        NSLog(@"nooooo");
       if (controller)
         [[controller view] setFrame:[layoutItem itemRect]];
       else

@@ -77,4 +77,6 @@
 - (NSIndexSet *)indexesOfViewControllers;
 - (NSIndexSet *)indexesOfInvisibleViewControllers;
 - (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
+
+- (void)softReloadData;
 @end

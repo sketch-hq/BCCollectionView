@@ -10,9 +10,11 @@ typedef void(^BCCollectionViewLayoutOperationIterator)(BCCollectionViewLayoutIte
 @interface BCCollectionViewLayoutOperation : NSOperation
 {
   BCCollectionViewLayoutOperationIterator layoutCallBack;
+  dispatch_block_t layoutCompletionBlock;
   BCCollectionView *collectionView;
 }
 @property (copy) BCCollectionViewLayoutOperationIterator layoutCallBack;
+@property (copy) dispatch_block_t layoutCompletionBlock;
 @property (assign) BCCollectionView *collectionView;
 
 @end

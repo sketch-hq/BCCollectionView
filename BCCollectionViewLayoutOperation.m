@@ -8,7 +8,7 @@
 #import "BCCollectionViewLayoutManager.h"
 
 @implementation BCCollectionViewLayoutOperation
-@synthesize layoutCallBack, collectionView;
+@synthesize layoutCallBack, collectionView, layoutCompletionBlock;
 
 - (void)main
 {
@@ -17,7 +17,7 @@
   NSInteger x = 0;
   NSInteger y = 0;
   NSUInteger colIndex = 0;
-  
+  NSRect visibleRect = [collectionView visibleRect];
   NSSize cellSize = [collectionView cellSize];
   NSSize inset = NSZeroSize;
   if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)])
@@ -44,7 +44,7 @@
     BCCollectionViewLayoutItem *item = [BCCollectionViewLayoutItem layoutItem];
     [item setItemIndex:i];
     if (![group isCollapsed]) {
-      if (x + cellSize.width > NSMaxX([collectionView visibleRect])) {
+      if (x + cellSize.width > NSMaxX(visibleRect)) {
         numberOfRows++;
         colIndex = 0;
         y += cellSize.height;
@@ -79,6 +79,7 @@
   if (![self isCancelled]) {
     dispatch_async(dispatch_get_main_queue(), ^{
       [[collectionView layoutManager] setItemLayouts:newLayouts];
+      layoutCompletionBlock();
     });
   }
 }
@@ -86,6 +87,7 @@
 - (void)dealloc
 {
   [layoutCallBack release];
+  [layoutCompletionBlock release];
   [super dealloc];
 }
 
