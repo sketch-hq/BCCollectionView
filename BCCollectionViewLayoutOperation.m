@@ -20,6 +20,7 @@
   NSRect visibleRect = [collectionView visibleRect];
   NSSize cellSize = [collectionView cellSize];
   NSSize inset = NSZeroSize;
+  NSUInteger gap = (NSWidth([collectionView frame]) - [[collectionView layoutManager] maximumNumberOfItemsPerRow]*cellSize.width)/[[collectionView layoutManager] maximumNumberOfItemsPerRow];
   if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)])
     inset = [[collectionView delegate] insetMarginForSelectingItemsInCollectionView:collectionView];
   
@@ -52,7 +53,7 @@
       }
       [item setColumnIndex:colIndex];
       [item setItemRect:NSMakeRect(x, y, cellSize.width, cellSize.height)];
-      x += cellSize.width;
+      x += cellSize.width + gap;
       colIndex++;
     } else {
       [item setItemRect:NSMakeRect(-cellSize.width*2, y, cellSize.width, cellSize.height)];
@@ -64,11 +65,11 @@
     if ([self isCancelled])
       return;
     
-    if (layoutCallBack != nil)
+    if (layoutCallBack != nil) {
       dispatch_async(dispatch_get_main_queue(), ^{
         layoutCallBack(item);
       });
-    
+    }
     if ([group itemRange].location + [group itemRange].length-1 == i)
       group = [groupEnum nextObject];
   }
