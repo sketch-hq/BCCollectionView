@@ -45,10 +45,10 @@
   [self autorelease];
 }
 
-- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
-{
-  return [self draggingUpdated:sender];
-}
+//- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+//{
+//  return [self draggingUpdated:sender];
+//}
 
 - (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
 {
@@ -57,6 +57,7 @@
   
   NSPoint mouse    = [self convertPoint:[sender draggingLocation] fromView:nil];
   NSUInteger index = [layoutManager indexOfItemAtPoint:mouse];
+  
   NSDragOperation operation = NSDragOperationNone;
   if ([sender draggingSource] == self) {
     if ([selectionIndexes containsIndex:index])
@@ -92,17 +93,21 @@
 
 - (void)draggingExited:(id<NSDraggingInfo>)sender
 {
-  if (dragHoverIndex != NSNotFound) {
+  NSPoint mouse    = [self convertPoint:[sender draggingLocation] fromView:nil];
+  NSUInteger index = [layoutManager indexOfItemAtPoint:mouse];
+  
+  if (index == NSNotFound) {
     [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:dragHoverIndex]];
     [self setDragHoverIndex:NSNotFound];
+    
+    if ([delegate respondsToSelector:@selector(collectionView:draggingExited:)])
+      [delegate collectionView:self draggingExited:sender];
   }
-  
-  if ([delegate respondsToSelector:@selector(collectionView:draggingExited:)])
-    [delegate collectionView:self draggingExited:sender];
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
+  NSLog(@"performDragOperation %i", (int)dragHoverIndex);
   id item = nil;
   if (dragHoverIndex >= 0 && dragHoverIndex <[contentArray count])
     item = [contentArray objectAtIndex:dragHoverIndex];

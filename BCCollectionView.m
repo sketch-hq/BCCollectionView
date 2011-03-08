@@ -522,9 +522,12 @@
   [selectionIndexes removeAllIndexes];
   
   [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
-    [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
+    NSViewController *viewController = [self viewControllerForItemAtIndex:[layoutItem itemIndex]];
+    if (viewController)
+      [delegate collectionView:self willShowViewController:viewController forItem:[contentArray objectAtIndex:[layoutItem itemIndex]]];
+    else
+      [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
   } completionBlock:^{
-    NSLog(@"reload done (content count: %i)", (int)[contentArray count]);
     [self resizeFrameToFitContents];
   }];
 }
