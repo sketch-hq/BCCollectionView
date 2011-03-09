@@ -14,6 +14,7 @@
 }
 @property (retain) NSArray *itemLayouts;
 - (id)initWithCollectionView:(BCCollectionView *)collectionView; //assigned
+- (void)cancelItemEnumerator;
 - (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock;
 
 #pragma mark Primitives

@@ -300,16 +300,18 @@
 
 - (void)addMissingViewControllerForItemAtIndex:(NSUInteger)anIndex withFrame:(NSRect)aRect
 {
-  NSViewController *viewController = [self emptyViewControllerForInsertion];
-  [visibleViewControllers setObject:viewController forKey:[NSNumber numberWithInteger:anIndex]];
-  [[viewController view] setFrame:aRect];
-  [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
-  
-  id itemToLoad = [contentArray objectAtIndex:anIndex];
-  [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
-  [self addSubview:[viewController view]];
-  if ([selectionIndexes containsIndex:anIndex])
-    [self delegateUpdateSelectionForItemAtIndex:anIndex];
+  if (anIndex < [contentArray count]) {
+    NSViewController *viewController = [self emptyViewControllerForInsertion];
+    [visibleViewControllers setObject:viewController forKey:[NSNumber numberWithInteger:anIndex]];
+    [[viewController view] setFrame:aRect];
+    [[viewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+    
+    id itemToLoad = [contentArray objectAtIndex:anIndex];
+    [delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
+    [self addSubview:[viewController view]];
+    if ([selectionIndexes containsIndex:anIndex])
+      [self delegateUpdateSelectionForItemAtIndex:anIndex];
+  }
 }
 
 - (void)addMissingGroupHeaders
@@ -491,6 +493,7 @@
 - (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches
 {
   [self deselectAllItems];
+  [layoutManager cancelItemEnumerator];
   
   if (!delegate)
     return;

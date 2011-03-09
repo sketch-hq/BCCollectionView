@@ -20,6 +20,11 @@
   return self;
 }
 
+- (void)cancelItemEnumerator
+{
+  [queue cancelAllOperations];
+}
+
 - (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock
 {
   [queue cancelAllOperations];
