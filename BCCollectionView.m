@@ -524,11 +524,12 @@
   
   [selectionIndexes removeAllIndexes];
   
+  NSRect visibleRect = [self visibleRect];
   [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
     NSViewController *viewController = [self viewControllerForItemAtIndex:[layoutItem itemIndex]];
     if (viewController)
       [delegate collectionView:self willShowViewController:viewController forItem:[contentArray objectAtIndex:[layoutItem itemIndex]]];
-    else
+    else if (NSIntersectsRect(visibleRect, [layoutItem itemRect]))
       [self addMissingViewControllerForItemAtIndex:[layoutItem itemIndex] withFrame:[layoutItem itemRect]];
   } completionBlock:^{
     [self resizeFrameToFitContents];
