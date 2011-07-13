@@ -107,7 +107,6 @@
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
-  NSLog(@"performDragOperation %i", (int)dragHoverIndex);
   id item = nil;
   if (dragHoverIndex >= 0 && dragHoverIndex <[contentArray count])
     item = [contentArray objectAtIndex:dragHoverIndex];

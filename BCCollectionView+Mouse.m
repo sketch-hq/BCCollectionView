@@ -30,7 +30,7 @@
   
   self.originalSelectionIndexes = [[selectionIndexes copy] autorelease];
   
-  if ([theEvent clickCount] == 2 && [delegate respondsToSelector:@selector(collectionView:didDoubleClickViewControllerAtIndex:)])
+  if ([theEvent type] == NSLeftMouseDown && [theEvent clickCount] == 2 && [delegate respondsToSelector:@selector(collectionView:didDoubleClickViewControllerAtIndex:)])
     [delegate collectionView:self didDoubleClickViewControllerAtIndex:[visibleViewControllers objectForKey:[NSNumber numberWithInt:index]]];
   
   if ([self shiftOrCommandKeyPressed] && [self.originalSelectionIndexes containsIndex:index])
@@ -41,6 +41,9 @@
 
 - (void)regularMouseDragged:(NSEvent *)anEvent
 {
+  NSIndexSet *originalSet = [[self selectionIndexes] copy];
+  selectionChangedDisabled = YES;
+  
   [self deselectAllItems];
   if ([self shiftOrCommandKeyPressed]) {
     [self.originalSelectionIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
@@ -69,19 +72,25 @@
   }];
   
   [self setNeedsDisplayInRect:BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation)];
+  
+  selectionChangedDisabled = NO;
+  if (![selectionIndexes isEqual:originalSet])
+    [self performSelector:@selector(delegateCollectionViewSelectionDidChange)];
 }
 
-- (void)mouseDragged:(NSEvent *)theEvent
+- (void)mouseDragged:(NSEvent *)anEvent
 {
+  [self autoscroll:anEvent];
+  
   if (isDragging) {
     NSUInteger index = [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
     if (index != NSNotFound && [selectionIndexes count] > 0 && [self delegateSupportsDragForItemsAtIndexes:selectionIndexes]) {
-      NSPoint mouse = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+      NSPoint mouse = [self convertPoint:[anEvent locationInWindow] fromView:nil];
       CGFloat distance = sqrt(pow(mouse.x-mouseDownLocation.x,2)+pow(mouse.y-mouseDownLocation.y,2));
       if (distance > 3)
-        [self initiateDraggingSessionWithEvent:theEvent];
+        [self initiateDraggingSessionWithEvent:anEvent];
     } else
-      [self regularMouseDragged:theEvent];
+      [self regularMouseDragged:anEvent];
   }
 }
 

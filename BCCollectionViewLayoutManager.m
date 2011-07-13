@@ -14,7 +14,7 @@
   self = [super init];
   if (self) {
     collectionView = aCollectionView;
-    queue          = [[NSOperationQueue alloc] init];
+    queue = [[NSOperationQueue alloc] init];
     [queue setMaxConcurrentOperationCount:1];
   }
   return self;
@@ -27,12 +27,13 @@
 
 - (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock
 {
-  [queue cancelAllOperations];
-  
   BCCollectionViewLayoutOperation *operation = [[BCCollectionViewLayoutOperation alloc] init];
   [operation setCollectionView:collectionView];
   [operation setLayoutCallBack:itemIterator];
   [operation setLayoutCompletionBlock:completionBlock];
+  
+// if ([queue operationCount] > 10)
+    [queue cancelAllOperations];
   [queue addOperation:[operation autorelease]];
 }
 

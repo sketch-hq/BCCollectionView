@@ -7,11 +7,10 @@
 {
   NSString *title;
   NSRange itemRange;
-  BOOL isCollapsed;
 }
 + (id)groupWithTitle:(NSString *)title range:(NSRange)range;
 @property (copy) NSString *title;
 @property NSRange itemRange;
-@property (setter=setCollapsed:) BOOL isCollapsed;
+@property (nonatomic) BOOL isCollapsed;
 
 @end
