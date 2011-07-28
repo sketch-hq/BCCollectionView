@@ -59,6 +59,7 @@ enum {
   performDragOperation:(id <NSDraggingInfo>)draggingInfo
       onViewController:(NSViewController *)viewController
                forItem:(id)item;
+- (NSDragOperation)collectionView:(BCCollectionView *)collectionView draggingEntered:(id <NSDraggingInfo>)draggingInfo;
 - (void)collectionView:(BCCollectionView *)collectionView draggingEnded:(id <NSDraggingInfo>)draggingInfo;
 - (void)collectionView:(BCCollectionView *)collectionView draggingExited:(id <NSDraggingInfo>)draggingInfo;
 

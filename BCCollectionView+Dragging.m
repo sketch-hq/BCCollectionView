@@ -45,10 +45,13 @@
   [self autorelease];
 }
 
-//- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
-//{
-//  return [self draggingUpdated:sender];
-//}
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+{
+  if ([delegate respondsToSelector:@selector(collectionView:draggingEntered:)])
+    return [delegate collectionView:self draggingEntered:sender];
+  else
+    return [self draggingUpdated:sender];
+}
 
 - (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
 {
