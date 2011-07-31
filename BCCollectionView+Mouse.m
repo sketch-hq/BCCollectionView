@@ -35,8 +35,18 @@
   
   if ([self shiftOrCommandKeyPressed] && [self.originalSelectionIndexes containsIndex:index])
     [self deselectItemAtIndex:index];
-  else
-    [self selectItemAtIndex:index];
+  else {
+    if ([NSEvent modifierFlags] & NSCommandKeyMask || [[self originalSelectionIndexes] count] == 0)
+      [self selectItemAtIndex:index];
+    else if ([NSEvent modifierFlags] & NSShiftKeyMask) {
+      NSInteger one = [[self originalSelectionIndexes] lastIndex];
+      NSInteger two = index;
+      if (two > one)
+        [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(MIN(one,two), 1+MAX(one,two)-MIN(one,two))]];
+      else
+        [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(MIN(one,two), MAX(one,two)-MIN(one,two))]];
+    }
+  }
 }
 
 - (void)regularMouseDragged:(NSEvent *)anEvent
