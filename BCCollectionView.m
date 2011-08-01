@@ -584,6 +584,20 @@
     return nil;
 }
 
+- (BOOL)resignFirstResponder
+{
+  if ([delegate respondsToSelector:@selector(collectionViewLostFirstResponder:)])
+    [delegate collectionViewLostFirstResponder:self];
+  return [super resignFirstResponder];
+}
+
+- (BOOL)becomeFirstResponder
+{
+  if ([delegate respondsToSelector:@selector(collectionViewBecameFirstResponder:)])
+    [delegate collectionViewBecameFirstResponder:self];
+  return [super becomeFirstResponder];
+}
+
 - (BOOL)isOpaque
 {
   return YES;

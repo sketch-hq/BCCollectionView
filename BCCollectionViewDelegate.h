@@ -72,6 +72,9 @@ enum {
 - (void)colectionViewDidZoom:(BCCollectionView *)collectionView;
 
 //contextual menu
-- (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet
-;
+- (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet;
+
+- (void)collectionViewLostFirstResponder:(BCCollectionView *)collectionView;
+- (void)collectionViewBecameFirstResponder:(BCCollectionView *)collectionView;
+
 @end
