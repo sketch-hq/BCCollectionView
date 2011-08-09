@@ -70,27 +70,26 @@
 
 - (void)moveLeft:(id)sender
 {
-  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
-  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y column:position.x-1]];
+  if (lastSelectionIndex > 0)
+    [self simpleSelectItemAtIndex:lastSelectionIndex-1];
 }
 
 - (void)moveLeftAndModifySelection:(id)sender
 {
-  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
-  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x-1];
-  [self simpleExtendSelectionRange:NSMakeRange(newIndex, 2) newIndex:newIndex];
+  if (lastSelectionIndex > 0) {
+    NSUInteger newIndex = MAX(0, lastSelectionIndex-1);
+    [self simpleExtendSelectionRange:NSMakeRange(newIndex, 2) newIndex:newIndex];
+  }
 }
 
 - (void)moveRight:(id)sender
 {
-  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
-  [self simpleSelectItemAtIndex:[layoutManager indexOfItemAtRow:position.y column:position.x+1]];
+  [self simpleSelectItemAtIndex:MIN([[self contentArray] count]-1, lastSelectionIndex+1)];
 }
 
 - (void)moveRightAndModifySelection:(id)sender
 {
-  NSPoint position = [layoutManager rowAndColumnPositionOfItemAtIndex:lastSelectionIndex];
-  NSUInteger newIndex = [layoutManager indexOfItemAtRow:position.y column:position.x+1];
+  NSUInteger newIndex = MIN([[self contentArray] count]-1, lastSelectionIndex+1);
   [self simpleExtendSelectionRange:NSMakeRange(lastSelectionIndex, 2) newIndex:newIndex];
 }
 

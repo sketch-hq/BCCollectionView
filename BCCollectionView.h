@@ -4,6 +4,10 @@
 #import <Cocoa/Cocoa.h>
 #import "BCCollectionViewDelegate.h"
 
+#ifndef BCArray
+#define BCArray(args...) [NSArray arrayWithObjects:args, nil]
+#endif
+
 @class BCCollectionViewLayoutManager;
 @interface BCCollectionView : NSView
 {
@@ -32,6 +36,7 @@
   
   BOOL isDragging;
   BOOL firstDrag;
+  BOOL selectionChangedDisabled;
   
   NSString *zoomValueObserverKey;
   CGFloat lastPinchMagnification;
@@ -53,6 +58,7 @@
 //designated way to load BCCollectionView
 - (void)reloadDataWithItems:(NSArray *)newContent emptyCaches:(BOOL)shouldEmptyCaches;
 - (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches;
+- (void)reloadDataWithItems:(NSArray *)newContent groups:(NSArray *)newGroups emptyCaches:(BOOL)shouldEmptyCaches completionBlock:(dispatch_block_t)completionBlock;
 
 //Managing Selections
 - (void)selectItemAtIndex:(NSUInteger)index;
@@ -78,5 +84,5 @@
 - (NSIndexSet *)indexesOfInvisibleViewControllers;
 - (NSViewController *)viewControllerForItemAtIndex:(NSUInteger)index;
 
-- (void)softReloadData;
+- (void)softReloadDataWithCompletionBlock:(dispatch_block_t)block;
 @end

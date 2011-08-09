@@ -46,7 +46,8 @@ enum {
 
 //working with groups
 - (NSUInteger)groupHeaderHeightForCollectionView:(BCCollectionView *)collectionView;
-- (id)collectionView:(BCCollectionView *)collectionView headerViewControllerForGroup:(BCCollectionViewGroup *)group;
+- (NSViewController *)collectionView:(BCCollectionView *)collectionView headerForGroup:(BCCollectionViewGroup *)group;
+- (NSInteger)topOffsetForItemsInCollectionView:(BCCollectionView *)collectionView;
 
 //managing Drag & Drop (in order of occurence)
 - (BOOL)collectionView:(BCCollectionView *)collectionView canDragItemsAtIndexes:(NSIndexSet *)indexSet;
@@ -58,6 +59,7 @@ enum {
   performDragOperation:(id <NSDraggingInfo>)draggingInfo
       onViewController:(NSViewController *)viewController
                forItem:(id)item;
+- (NSDragOperation)collectionView:(BCCollectionView *)collectionView draggingEntered:(id <NSDraggingInfo>)draggingInfo;
 - (void)collectionView:(BCCollectionView *)collectionView draggingEnded:(id <NSDraggingInfo>)draggingInfo;
 - (void)collectionView:(BCCollectionView *)collectionView draggingExited:(id <NSDraggingInfo>)draggingInfo;
 
@@ -67,8 +69,12 @@ enum {
 
 //magnifiy events. This method is required BCCollectionView+Zoom is included
 - (NSRange)validScalingRangeForCollectionView:(BCCollectionView *)collectionView;
+- (void)colectionViewDidZoom:(BCCollectionView *)collectionView;
 
 //contextual menu
-- (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet
-;
+- (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet;
+
+- (void)collectionViewLostFirstResponder:(BCCollectionView *)collectionView;
+- (void)collectionViewBecameFirstResponder:(BCCollectionView *)collectionView;
+
 @end
