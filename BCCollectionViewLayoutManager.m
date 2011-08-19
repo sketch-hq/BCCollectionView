@@ -62,8 +62,11 @@
 
 - (NSPoint)rowAndColumnPositionOfItemAtIndex:(NSUInteger)anIndex
 {
-  BCCollectionViewLayoutItem *itemLayout = [itemLayouts objectAtIndex:anIndex];
-  return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
+  if ([itemLayouts count] > anIndex) {
+    BCCollectionViewLayoutItem *itemLayout = [itemLayouts objectAtIndex:anIndex];
+    return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
+  } else
+    return NSZeroPoint;
 }
 
 - (NSUInteger)indexOfItemAtRow:(NSUInteger)rowIndex column:(NSUInteger)colIndex

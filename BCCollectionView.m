@@ -488,6 +488,10 @@
   if (!delegate)
     return;
   
+  NSSize cellSize = [delegate cellSizeForCollectionView:self];
+  if (NSWidth([self frame]) < cellSize.width || NSHeight([self frame]) < cellSize.height)
+    return;
+  
   for (BCCollectionViewGroup *group in groups)
     [group removeObserver:self forKeyPath:@"isCollapsed"];
   for (BCCollectionViewGroup *group in newGroups)
@@ -553,6 +557,10 @@
 
 - (void)softReloadDataWithCompletionBlock:(dispatch_block_t)block
 {
+  NSSize cellSize = [delegate cellSizeForCollectionView:self];
+  if (NSWidth([self visibleRect]) < cellSize.width || NSHeight([self visibleRect]) < cellSize.height)
+    return;
+  
   NSRange range = [self rangeOfVisibleItemsWithOverflow];
   [layoutManager enumerateItems:^(BCCollectionViewLayoutItem *layoutItem) {
     if (NSLocationInRange([layoutItem itemIndex], range)) {

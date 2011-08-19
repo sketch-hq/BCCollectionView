@@ -25,7 +25,7 @@
   NSSize inset          = NSZeroSize;
   NSInteger maxColumns  = [[collectionView layoutManager] maximumNumberOfItemsPerRow];
   NSUInteger gap        = (NSWidth([collectionView frame]) - maxColumns*cellSize.width)/(maxColumns-1);
-  if (maxColumns < 4) {
+  if (maxColumns < 4 && maxColumns > 1) {
     gap = (NSWidth([collectionView frame]) - maxColumns*cellSize.width)/(maxColumns+1);
     startingX = gap;
     x = gap;
