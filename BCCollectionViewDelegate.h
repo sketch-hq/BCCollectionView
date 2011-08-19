@@ -69,7 +69,7 @@ enum {
 
 //magnifiy events. This method is required BCCollectionView+Zoom is included
 - (NSRange)validScalingRangeForCollectionView:(BCCollectionView *)collectionView;
-- (void)colectionViewDidZoom:(BCCollectionView *)collectionView;
+- (void)collectionViewDidZoom:(BCCollectionView *)collectionView;
 
 //contextual menu
 - (NSMenu *)collectionView:(BCCollectionView *)collectionView menuForItemsAtIndexes:(NSIndexSet *)indexSet;

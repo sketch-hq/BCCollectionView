@@ -20,8 +20,8 @@
 - (void)zoomValueDidChange
 {
   [self softReloadDataWithCompletionBlock:^{
-    if ([delegate respondsToSelector:@selector(colectionViewDidZoom:)])
-      [delegate colectionViewDidZoom:self];
+    if ([delegate respondsToSelector:@selector(collectionViewDidZoom:)])
+      [delegate collectionViewDidZoom:self];
   }];
 }
 
