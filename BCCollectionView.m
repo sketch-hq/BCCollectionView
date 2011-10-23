@@ -164,8 +164,6 @@
     [delegate collectionView:self
        didDeselectItem:[contentArray objectAtIndex:index]
     withViewController:[self viewControllerForItemAtIndex:index]];
-  
-  [self delegateCollectionViewSelectionDidChange];
 }
 
 - (void)delegateViewControllerBecameInvisibleAtIndex:(NSUInteger)index
@@ -386,11 +384,18 @@
 
 - (void)deselectItemAtIndex:(NSUInteger)index
 {
+  [self deselectItemAtIndex:index inBulk:NO];
+}
+
+- (void)deselectItemAtIndex:(NSUInteger)index inBulk:(BOOL)bulkDeselecting
+{
   if (index < [contentArray count]) {
     [selectionIndexes removeIndex:index];
     if ([self shoulDrawSelections])
       [self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
     
+    if (!bulkDeselecting)
+      [self delegateCollectionViewSelectionDidChange];
     [self delegateDidDeselectItemAtIndex:index];
     [self delegateUpdateDeselectionForItemAtIndex:index];
   }
@@ -399,15 +404,14 @@
 - (void)deselectItemsAtIndexes:(NSIndexSet *)indexes
 {
   [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    [self deselectItemAtIndex:idx];
+    [self deselectItemAtIndex:idx inBulk:YES];
   }];
+  [self delegateCollectionViewSelectionDidChange];
 }
 
 - (void)deselectAllItems
 {
-  [selectionIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    [self deselectItemAtIndex:idx];
-  }];
+  [self deselectItemsAtIndexes:selectionIndexes];
 }
 
 - (NSIndexSet *)selectionIndexes
