@@ -16,20 +16,15 @@
     return;
   
   NSInteger numberOfRows = 0;
-  NSInteger startingX = 0;
-  NSInteger x = 0;
   NSInteger y = 0;
   NSUInteger colIndex   = 0;
   NSRect visibleRect    = [collectionView visibleRect];
   NSSize cellSize       = [collectionView cellSize];
   NSSize inset          = NSZeroSize;
   NSInteger maxColumns  = [[collectionView layoutManager] maximumNumberOfItemsPerRow];
-  NSUInteger gap        = (NSWidth([collectionView frame]) - maxColumns*cellSize.width)/(maxColumns-1);
-  if (maxColumns < 4) {
-    gap = (NSWidth([collectionView frame]) - maxColumns*cellSize.width)/(maxColumns+1);
-    startingX = gap;
-    x = gap;
-  }
+  NSUInteger gap        = (NSWidth([collectionView frame]) - maxColumns*cellSize.width)/(maxColumns+1);
+  NSInteger startingX = gap;
+  NSInteger x = gap;
   
   if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)])
     inset = [[collectionView delegate] insetMarginForSelectingItemsInCollectionView:collectionView];
