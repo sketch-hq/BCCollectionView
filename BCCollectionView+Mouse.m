@@ -86,6 +86,7 @@
   selectionChangedDisabled = NO;
   if (![selectionIndexes isEqual:originalSet])
     [self performSelector:@selector(delegateCollectionViewSelectionDidChange)];
+  [originalSet release];
 }
 
 - (void)mouseDragged:(NSEvent *)anEvent

@@ -78,9 +78,6 @@
     if ([group itemRange].location + [group itemRange].length-1 == i)
       group = [groupEnum nextObject];
   }
-  numberOfRows = MAX(numberOfRows, [[collectionView groups] count]);
-  if ([[collectionView contentArray] count] > 0 && numberOfRows == -1)
-    numberOfRows = 1;
   
   if (![self isCancelled]) {
     dispatch_async(dispatch_get_main_queue(), ^{
