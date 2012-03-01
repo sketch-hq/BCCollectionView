@@ -18,7 +18,7 @@
   [[self window] makeFirstResponder:self];
   
   isDragging           = YES;
-  mouseDownLocation    = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+  mouseDownLocation    = BCRoundedPoint([self convertPoint:[theEvent locationInWindow] fromView:nil]);
   mouseDraggedLocation = mouseDownLocation;
   NSUInteger index     = [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
   
@@ -62,7 +62,7 @@
   }
   [self setNeedsDisplayInRect:BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation)];
   
-  mouseDraggedLocation = [self convertPoint:[anEvent locationInWindow] fromView:nil];
+  mouseDraggedLocation = BCRoundedPoint([self convertPoint:[anEvent locationInWindow] fromView:nil]);
   NSIndexSet *suggestedIndexes = [self indexesOfItemContentRectsInRect:BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation)];
   
   if (![self shiftOrCommandKeyPressed]) {
