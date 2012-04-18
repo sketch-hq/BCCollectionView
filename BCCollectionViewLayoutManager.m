@@ -62,14 +62,17 @@
 
 - (NSPoint)rowAndColumnPositionOfItemAtIndex:(NSUInteger)anIndex
 {
-  BCCollectionViewLayoutItem *itemLayout = [itemLayouts objectAtIndex:anIndex];
-  return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
+  if ([itemLayouts count] > anIndex) {
+    BCCollectionViewLayoutItem *itemLayout = [itemLayouts objectAtIndex:anIndex];
+    return NSMakePoint(itemLayout.columnIndex, itemLayout.rowIndex);
+  } else
+    return NSZeroPoint;
 }
 
 - (NSUInteger)indexOfItemAtRow:(NSUInteger)rowIndex column:(NSUInteger)colIndex
 {
   __block NSUInteger index = NSNotFound;
-  [itemLayouts enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(id item, NSUInteger idx, BOOL *stop) {
+  [itemLayouts enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(BCCollectionViewLayoutItem *item, NSUInteger idx, BOOL *stop) {
     if ([item rowIndex] == rowIndex && [item columnIndex] == colIndex) {
       index = [item itemIndex];
       *stop = YES;

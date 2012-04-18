@@ -65,6 +65,7 @@
 
 - (void)selectItemsAtIndexes:(NSIndexSet *)indexes;
 - (void)deselectItemAtIndex:(NSUInteger)index;
+- (void)deselectItemAtIndex:(NSUInteger)index inBulk:(BOOL)bulk;
 - (void)deselectItemsAtIndexes:(NSIndexSet *)indexes;
 - (void)deselectAllItems;
 - (NSIndexSet *)selectionIndexes;

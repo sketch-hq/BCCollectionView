@@ -41,6 +41,10 @@
     else if ([NSEvent modifierFlags] & NSShiftKeyMask) {
       NSInteger one = [[self originalSelectionIndexes] lastIndex];
       NSInteger two = index;
+      
+      if (index == NSNotFound)
+        return;
+      
       if (two > one)
         [self selectItemsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(MIN(one,two), 1+MAX(one,two)-MIN(one,two))]];
       else
