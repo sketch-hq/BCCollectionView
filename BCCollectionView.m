@@ -7,34 +7,53 @@
 #import "BCCollectionViewLayoutItem.h"
 #import "BCCollectionViewGroup.h"
 
+@interface BCCollectionView ()
+- (void)configureView;
+@end
+
+
 @implementation BCCollectionView
 @synthesize delegate, contentArray, groups, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows, layoutManager;
 @dynamic visibleViewControllerArray;
+
+- (id)initWithFrame:(NSRect)frameRect
+{
+  self = [super initWithFrame:frameRect];
+  if (self) {
+    [self configureView];
+  }
+	return self;
+}
 
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
   self = [super initWithCoder:aDecoder];
   if (self) {
-    reusableViewControllers     = [[NSMutableArray alloc] init];
-    visibleViewControllers      = [[NSMutableDictionary alloc] init];
-    contentArray                = [[NSArray alloc] init];
-    selectionIndexes            = [[NSMutableIndexSet alloc] init];
-    dragHoverIndex              = NSNotFound;
-    accumulatedKeyStrokes       = [[NSString alloc] init];
-    numberOfPreRenderedRows     = 3;
-    layoutManager               = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
-    visibleGroupViewControllers = [[NSMutableDictionary alloc] init];
-    
-    [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
-    
-    NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
-    [enclosingClipView setPostsBoundsChangedNotifications:YES];
-    NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
-    [center addObserver:self selector:@selector(scrollViewDidScroll:) name:NSViewBoundsDidChangeNotification object:enclosingClipView];
-    [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:self];
+    [self configureView];
   }
   return self;
 }
+
+- (void)configureView
+{
+  reusableViewControllers     = [[NSMutableArray alloc] init];
+  visibleViewControllers      = [[NSMutableDictionary alloc] init];
+  contentArray                = [[NSArray alloc] init];
+  selectionIndexes            = [[NSMutableIndexSet alloc] init];
+  dragHoverIndex              = NSNotFound;
+  accumulatedKeyStrokes       = [[NSString alloc] init];
+  numberOfPreRenderedRows     = 3;
+  layoutManager               = [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
+  visibleGroupViewControllers = [[NSMutableDictionary alloc] init];
+
+  [self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
+
+  NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
+  [enclosingClipView setPostsBoundsChangedNotifications:YES];
+  NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+  [center addObserver:self selector:@selector(scrollViewDidScroll:) name:NSViewBoundsDidChangeNotification object:enclosingClipView];
+  [center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:self];
+}	
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
